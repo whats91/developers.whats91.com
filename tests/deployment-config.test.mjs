@@ -52,6 +52,27 @@ test("production bootstrap exposes the project root for webhook deploys", () => 
   );
 });
 
+test("production layout avoids build-time Google font generation", () => {
+  const layout = fs.readFileSync(path.join(rootDir, "src/app/layout.tsx"), "utf8");
+  const globals = fs.readFileSync(path.join(rootDir, "src/app/globals.css"), "utf8");
+
+  assert.doesNotMatch(
+    layout,
+    /next\/font\/google/,
+    "layout should not depend on next/font/google during CloudPanel builds",
+  );
+  assert.match(
+    globals,
+    /--font-sans:\s*ui-sans-serif/,
+    "globals.css should use a stable system sans font stack",
+  );
+  assert.match(
+    globals,
+    /--font-mono:\s*ui-monospace/,
+    "globals.css should use a stable system mono font stack",
+  );
+});
+
 test("CloudPanel deployment does not bind Next.js to a configured HOSTNAME", () => {
   const server = fs.readFileSync(path.join(rootDir, "server.js"), "utf8");
   const envExample = fs.readFileSync(path.join(rootDir, ".env.example"), "utf8");
