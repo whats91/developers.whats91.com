@@ -101,7 +101,8 @@ function shouldExcludePath(relPath) {
   if (!normalized || normalized === ".") return false;
   if (CONFIG.syncExcludes.includes(normalized)) return true;
   if (CONFIG.syncExcludes.includes(baseName)) return true;
-  if (baseName === ".env" || baseName.startsWith(".env.")) return true;
+  if (baseName === ".env") return true;
+  if (baseName.startsWith(".env.") && baseName !== ".env.example") return true;
 
   return false;
 }
@@ -121,6 +122,10 @@ function runCommand(command, args, cwd) {
         DEBIAN_FRONTEND: "noninteractive",
         NPM_CONFIG_YES: "true",
         npm_config_yes: "true",
+        NPM_CONFIG_PRODUCTION: "false",
+        npm_config_production: "false",
+        NPM_CONFIG_OMIT: "",
+        npm_config_omit: "",
       },
     });
 
@@ -281,7 +286,7 @@ async function deploy() {
     deleteNextBuildFolder();
     await sleep(CONFIG.delayMs);
 
-    await runCommand("npm", ["ci"], CONFIG.projectPath);
+    await runCommand("npm", ["ci", "--include=dev"], CONFIG.projectPath);
     await runCommand("npm", ["run", "build"], CONFIG.projectPath);
     await runCommand(
       "pm2",

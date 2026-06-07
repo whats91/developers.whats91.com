@@ -38,6 +38,10 @@ test("deploy worker fetches the public main branch and performs production deplo
     "deleteNextBuildFolder()",
     "npm",
     "ci",
+    "--include=dev",
+    "NPM_CONFIG_PRODUCTION",
+    "npm_config_production",
+    "NPM_CONFIG_OMIT",
     "run",
     "build",
     "pm2",
@@ -47,6 +51,7 @@ test("deploy worker fetches the public main branch and performs production deplo
   ]);
 
   assert.match(deployScript, /syncExcludes:[\s\S]*"\.env"[\s\S]*"node_modules"[\s\S]*"\.next"[\s\S]*"logs"[\s\S]*"\.deploy-tmp"/);
+  assert.match(deployScript, /baseName !== "\.env\.example"/);
 });
 
 test("deploy webhook route validates optional trigger auth and launches detached deployment", () => {
