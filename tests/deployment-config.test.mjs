@@ -73,6 +73,16 @@ test("production layout avoids build-time Google font generation", () => {
   );
 });
 
+test("production social image routes avoid build-time image generation", () => {
+  const openGraphImage = fs.readFileSync(path.join(rootDir, "src/app/opengraph-image/route.ts"), "utf8");
+  const twitterImage = fs.readFileSync(path.join(rootDir, "src/app/twitter-image/route.ts"), "utf8");
+
+  assert.doesNotMatch(openGraphImage, /next\/og|ImageResponse/);
+  assert.doesNotMatch(twitterImage, /next\/og|ImageResponse/);
+  assert.match(openGraphImage, /image\/svg\+xml/);
+  assert.match(twitterImage, /image\/svg\+xml/);
+});
+
 test("CloudPanel deployment does not bind Next.js to a configured HOSTNAME", () => {
   const server = fs.readFileSync(path.join(rootDir, "server.js"), "utf8");
   const envExample = fs.readFileSync(path.join(rootDir, ".env.example"), "utf8");

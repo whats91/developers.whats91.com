@@ -98,18 +98,18 @@ test("SEO metadata emits branded social images and FAQ structured data", () => {
 });
 
 test("branded OpenGraph and Twitter image routes exist", () => {
-  const openGraphImage = readRequiredFile("src/app/opengraph-image.tsx");
-  const twitterImage = readRequiredFile("src/app/twitter-image.tsx");
+  const openGraphImage = readRequiredFile("src/app/opengraph-image/route.ts");
+  const twitterImage = readRequiredFile("src/app/twitter-image/route.ts");
 
   assertContainsAll(openGraphImage, [
-    "ImageResponse",
+    "image/svg+xml",
     "Whats91 Developer Documentation",
     "1200",
     "630",
   ]);
 
   assertContainsAll(twitterImage, [
-    "ImageResponse",
+    "image/svg+xml",
     "Whats91 Developer Documentation",
     "1200",
     "630",
