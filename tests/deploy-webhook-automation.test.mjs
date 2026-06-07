@@ -63,6 +63,7 @@ test("deploy webhook route validates optional trigger auth and launches detached
     "DEPLOY_WEBHOOK_TOKEN",
     "x-deploy-token",
     "timingSafeEqual",
+    "process.env.PROJECT_ROOT?.trim()",
     "x-github-event",
     "ping",
     "refs/heads/main",

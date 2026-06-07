@@ -32,6 +32,7 @@ function isAuthorized(request: NextRequest) {
 function resolveProjectRoot() {
   return (
     process.env.ROOT_PATH?.trim() ||
+    process.env.PROJECT_ROOT?.trim() ||
     process.env.DEPLOY_ROOT_PATH?.trim() ||
     process.env.DEPLOY_PROJECT_PATH?.trim() ||
     '.'

@@ -73,6 +73,7 @@ PORT=3000
 ```
 
 Do not set `HOSTNAME` in CloudPanel. The bootstrap removes any inherited `HOSTNAME` before starting Next.js so the standalone server binds to the default host for the configured `PORT`; setting a public server IP can cause CloudPanel reverse-proxy 502 errors.
+The bootstrap also sets `ROOT_PATH` and `PROJECT_ROOT` to the project directory before loading the standalone server, so webhook deployments can find `scripts/deploy.js` even if the standalone runtime changes the current working directory.
 
 Install, build, and start the application with PM2:
 

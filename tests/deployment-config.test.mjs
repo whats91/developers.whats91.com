@@ -37,6 +37,21 @@ test("production bootstrap loads .env before starting the Next.js standalone ser
   );
 });
 
+test("production bootstrap exposes the project root for webhook deploys", () => {
+  const server = fs.readFileSync(path.join(rootDir, "server.js"), "utf8");
+
+  assert.match(
+    server,
+    /process\.env\.ROOT_PATH\s*=\s*process\.env\.ROOT_PATH\s*\|\|\s*__dirname/,
+    "server.js should preserve the project root before Next standalone changes cwd",
+  );
+  assert.match(
+    server,
+    /process\.env\.PROJECT_ROOT\s*=\s*process\.env\.PROJECT_ROOT\s*\|\|\s*__dirname/,
+    "server.js should expose PROJECT_ROOT for deployment helpers",
+  );
+});
+
 test("CloudPanel deployment does not bind Next.js to a configured HOSTNAME", () => {
   const server = fs.readFileSync(path.join(rootDir, "server.js"), "utf8");
   const envExample = fs.readFileSync(path.join(rootDir, ".env.example"), "utf8");
