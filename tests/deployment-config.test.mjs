@@ -37,6 +37,16 @@ test("production bootstrap loads .env before starting the Next.js standalone ser
   );
 });
 
+test("production bootstrap reports missing standalone builds clearly", () => {
+  const server = fs.readFileSync(path.join(rootDir, "server.js"), "utf8");
+
+  assert.match(server, /standaloneServerPath/);
+  assert.match(server, /fs\.existsSync\(standaloneServerPath\)/);
+  assert.match(server, /Missing Next\.js standalone build/);
+  assert.match(server, /Run `npm run deploy:run`/);
+  assert.match(server, /process\.exit\(1\)/);
+});
+
 test("production bootstrap exposes the project root for webhook deploys", () => {
   const server = fs.readFileSync(path.join(rootDir, "server.js"), "utf8");
 

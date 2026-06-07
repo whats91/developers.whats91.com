@@ -1,4 +1,5 @@
 const path = require("node:path");
+const fs = require("node:fs");
 const dotenv = require("dotenv");
 
 dotenv.config({
@@ -12,4 +13,16 @@ process.env.NODE_ENV = process.env.NODE_ENV || "production";
 // A public HOSTNAME value can make Next bind away from localhost and cause 502s.
 delete process.env.HOSTNAME;
 
-require(path.join(__dirname, ".next", "standalone", "server.js"));
+const standaloneServerPath = path.join(__dirname, ".next", "standalone", "server.js");
+
+if (!fs.existsSync(standaloneServerPath)) {
+  console.error(
+    [
+      `Missing Next.js standalone build: ${standaloneServerPath}`,
+      "Run `npm run deploy:run` from the project root to rebuild and restart PM2.",
+    ].join("\n")
+  );
+  process.exit(1);
+}
+
+require(standaloneServerPath);

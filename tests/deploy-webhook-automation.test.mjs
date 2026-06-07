@@ -35,6 +35,8 @@ test("deploy worker fetches the public main branch and performs production deplo
     "--hard",
     "origin/${CONFIG.branch}",
     "copyRuntimeEnvToTemp()",
+    "assertStandaloneBuild(CONFIG.tempPath)",
+    "assertStandaloneBuild(CONFIG.projectPath)",
     "npm",
     "ci",
     "--include=dev",
@@ -51,9 +53,11 @@ test("deploy worker fetches the public main branch and performs production deplo
 
   assert.match(deployScript, /runCommand\("npm", \["ci", "--include=dev"\], CONFIG\.tempPath\)/);
   assert.match(deployScript, /runCommand\("npm", \["run", "build"\], CONFIG\.tempPath\)/);
+  assert.match(deployScript, /assertStandaloneBuild\(CONFIG\.tempPath\)[\s\S]*syncDirectory\(CONFIG\.tempPath, CONFIG\.projectPath\)/);
   assert.match(deployScript, /runCommand\(\s*"npm",\s*\["run", "build"\],\s*CONFIG\.tempPath\s*\)[\s\S]*syncDirectory\(CONFIG\.tempPath, CONFIG\.projectPath\)/);
+  assert.match(deployScript, /assertStandaloneBuild\(CONFIG\.projectPath\)[\s\S]*startOrRestart/);
   assert.match(deployScript, /syncExcludes:[\s\S]*"\.env"[\s\S]*"node_modules"[\s\S]*"logs"[\s\S]*"\.deploy-tmp"/);
-  assert.doesNotMatch(deployScript, /syncExcludes:[\s\S]*"\.next"/);
+  assert.doesNotMatch(deployScript, /syncExcludes:\s*\[[^\]]*"\.next"/);
   assert.doesNotMatch(deployScript, /deleteNextBuildFolder\(\)/);
   assert.match(deployScript, /baseName !== "\.env\.example"/);
 });

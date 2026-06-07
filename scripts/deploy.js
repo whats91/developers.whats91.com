@@ -264,6 +264,16 @@ function copyRuntimeEnvToTemp() {
   log("Copied runtime .env into temp checkout for build", "cyan");
 }
 
+function assertStandaloneBuild(targetPath) {
+  const standaloneServerPath = path.join(targetPath, ".next", "standalone", "server.js");
+  if (fs.existsSync(standaloneServerPath)) {
+    log(`Verified standalone build: ${standaloneServerPath}`, "green");
+    return;
+  }
+
+  throw new Error(`Missing standalone build artifact: ${standaloneServerPath}`);
+}
+
 async function deploy() {
   const startedAt = Date.now();
 
@@ -284,9 +294,11 @@ async function deploy() {
     copyRuntimeEnvToTemp();
     await runCommand("npm", ["ci", "--include=dev"], CONFIG.tempPath);
     await runCommand("npm", ["run", "build"], CONFIG.tempPath);
+    assertStandaloneBuild(CONFIG.tempPath);
     await sleep(CONFIG.delayMs);
 
     syncDirectory(CONFIG.tempPath, CONFIG.projectPath);
+    assertStandaloneBuild(CONFIG.projectPath);
     await sleep(CONFIG.delayMs);
 
     await runCommand(
