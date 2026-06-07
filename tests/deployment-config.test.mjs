@@ -83,6 +83,14 @@ test("production layout avoids build-time Google font generation", () => {
   );
 });
 
+test("Next standalone builds use the active checkout as the Turbopack root", () => {
+  const nextConfig = fs.readFileSync(path.join(rootDir, "next.config.ts"), "utf8");
+
+  assert.match(nextConfig, /output:\s*"standalone"/);
+  assert.match(nextConfig, /turbopack:\s*\{/);
+  assert.match(nextConfig, /root:\s*process\.cwd\(\)/);
+});
+
 test("production social image routes avoid build-time image generation", () => {
   const openGraphImage = fs.readFileSync(path.join(rootDir, "src/app/opengraph-image/route.ts"), "utf8");
   const twitterImage = fs.readFileSync(path.join(rootDir, "src/app/twitter-image/route.ts"), "utf8");

@@ -274,6 +274,14 @@ function assertStandaloneBuild(targetPath) {
   throw new Error(`Missing standalone build artifact: ${standaloneServerPath}`);
 }
 
+function removeTempBuildOutput() {
+  const tempNextPath = path.join(CONFIG.tempPath, ".next");
+  if (!fs.existsSync(tempNextPath)) return;
+
+  fs.rmSync(tempNextPath, { recursive: true, force: true });
+  log("Removed stale temp build output: .deploy-tmp/.next", "yellow");
+}
+
 async function deploy() {
   const startedAt = Date.now();
 
@@ -293,6 +301,7 @@ async function deploy() {
 
     copyRuntimeEnvToTemp();
     await runCommand("npm", ["ci", "--include=dev"], CONFIG.tempPath);
+    removeTempBuildOutput();
     await runCommand("npm", ["run", "build"], CONFIG.tempPath);
     assertStandaloneBuild(CONFIG.tempPath);
     await sleep(CONFIG.delayMs);

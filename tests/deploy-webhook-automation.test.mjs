@@ -35,6 +35,7 @@ test("deploy worker fetches the public main branch and performs production deplo
     "--hard",
     "origin/${CONFIG.branch}",
     "copyRuntimeEnvToTemp()",
+    "removeTempBuildOutput()",
     "assertStandaloneBuild(CONFIG.tempPath)",
     "assertStandaloneBuild(CONFIG.projectPath)",
     "npm",
@@ -52,6 +53,7 @@ test("deploy worker fetches the public main branch and performs production deplo
   ]);
 
   assert.match(deployScript, /runCommand\("npm", \["ci", "--include=dev"\], CONFIG\.tempPath\)/);
+  assert.match(deployScript, /runCommand\("npm", \["ci", "--include=dev"\], CONFIG\.tempPath\)[\s\S]*removeTempBuildOutput\(\)[\s\S]*runCommand\("npm", \["run", "build"\], CONFIG\.tempPath\)/);
   assert.match(deployScript, /runCommand\("npm", \["run", "build"\], CONFIG\.tempPath\)/);
   assert.match(deployScript, /assertStandaloneBuild\(CONFIG\.tempPath\)[\s\S]*syncDirectory\(CONFIG\.tempPath, CONFIG\.projectPath\)/);
   assert.match(deployScript, /runCommand\(\s*"npm",\s*\["run", "build"\],\s*CONFIG\.tempPath\s*\)[\s\S]*syncDirectory\(CONFIG\.tempPath, CONFIG\.projectPath\)/);
