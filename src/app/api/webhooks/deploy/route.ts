@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic'
 
 type DeployPayload = {
   ref?: string
+  payload?: string
 }
 
 function safeCompare(expected: string, provided: string) {
@@ -39,9 +40,41 @@ function resolveProjectRoot() {
   )
 }
 
+function normalizePayload(value: unknown): DeployPayload {
+  if (!value || typeof value !== 'object') return {}
+
+  const payload = value as DeployPayload
+  if (typeof payload.ref === 'string') return { ref: payload.ref }
+
+  if (typeof payload.payload === 'string') {
+    try {
+      return normalizePayload(JSON.parse(payload.payload))
+    } catch {
+      return {}
+    }
+  }
+
+  return {}
+}
+
 async function readPayload(request: NextRequest): Promise<DeployPayload> {
+  const contentType = request.headers.get('content-type') || ''
+
   try {
-    return (await request.json()) as DeployPayload
+    if (contentType.includes('application/json')) {
+      return normalizePayload(await request.json())
+    }
+
+    const body = await request.text()
+    if (!body.trim()) return {}
+
+    if (contentType.includes('application/x-www-form-urlencoded')) {
+      const payloadParam = new URLSearchParams(body).get('payload')
+      if (!payloadParam) return {}
+      return normalizePayload(JSON.parse(payloadParam))
+    }
+
+    return normalizePayload(JSON.parse(body))
   } catch {
     return {}
   }
@@ -142,7 +175,19 @@ export async function POST(request: NextRequest) {
   }
 
   const payload = await readPayload(request)
-  if (event === 'push' && payload.ref !== 'refs/heads/main') {
+  const expectedRef = `refs/heads/${process.env.DEPLOY_BRANCH || 'main'}`
+  if (event === 'push' && !payload.ref) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Push webhook missing ref.',
+        message: 'Expected GitHub to send payload.ref.',
+      },
+      { status: 400 }
+    )
+  }
+
+  if (event === 'push' && payload.ref !== expectedRef) {
     return NextResponse.json({
       success: true,
       ignored: true,

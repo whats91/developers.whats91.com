@@ -66,7 +66,7 @@ test("deploy webhook route validates optional trigger auth and launches detached
     "process.env.PROJECT_ROOT?.trim()",
     "x-github-event",
     "ping",
-    "refs/heads/main",
+    "expectedRef",
     "scripts/deploy.js",
     "spawn(",
     "detached: true",
@@ -74,6 +74,29 @@ test("deploy webhook route validates optional trigger auth and launches detached
     "deploy-webhook.log",
     "NextResponse.json",
     "status: 202",
+  ]);
+});
+
+test("deploy webhook route parses GitHub json and form encoded payloads", () => {
+  const route = readRequiredFile("src/app/api/webhooks/deploy/route.ts");
+
+  assertContainsAll(route, [
+    "application/x-www-form-urlencoded",
+    "request.text()",
+    "URLSearchParams",
+    "payload",
+    "JSON.parse(payloadParam)",
+  ]);
+});
+
+test("deploy webhook route returns a clear error when a push payload has no ref", () => {
+  const route = readRequiredFile("src/app/api/webhooks/deploy/route.ts");
+
+  assertContainsAll(route, [
+    "const expectedRef = `refs/heads/${process.env.DEPLOY_BRANCH || 'main'}`",
+    "Push webhook missing ref.",
+    "Expected GitHub to send payload.ref.",
+    "status: 400",
   ]);
 });
 
