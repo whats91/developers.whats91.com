@@ -38,8 +38,8 @@ This is a Next.js 16 developer documentation portal built with a Mintlify-inspir
 
 ```bash
 # Clone the repository
-git clone https://github.com/travel-dev82/whats91-docs.git
-cd whats91-docs
+git clone https://github.com/whats91/developers.whats91.com.git
+cd developers.whats91.com
 
 # Install dependencies
 npm install
@@ -90,6 +90,35 @@ npm run pm2:reload
 ```
 
 CloudPanel can also run `npm start` directly after `npm run build`. PM2 logs should be used for production logging; the npm scripts intentionally do not pipe output to log files.
+
+### Automated GitHub Webhook Deployment
+
+The project includes a deployment webhook that can be configured in GitHub so pushes to `main` update the production website automatically.
+
+Recommended `.env` values:
+
+```dotenv
+DEPLOY_DOMAIN=developers.whats91.com
+DEPLOY_REPO_URL=https://github.com/whats91/developers.whats91.com.git
+DEPLOY_BRANCH=main
+DEPLOY_PM2_APP_NAME=developers-whats91-com
+DEPLOY_WEBHOOK_TOKEN=replace-with-a-long-random-string
+```
+
+Manual server-side deployment command:
+
+```bash
+npm run deploy:run
+```
+
+GitHub webhook settings:
+
+- Payload URL: `https://developers.whats91.com/api/webhooks/deploy?token=YOUR_TOKEN`
+- Content type: `application/json`
+- Event: push only
+- Branch: `main`
+
+If `DEPLOY_WEBHOOK_TOKEN` is empty, the webhook remains open and does not require a token. The repository is public, so no GitHub token is needed for deployment fetches. Deployment logs are written to `logs/deploy-webhook.log`.
 
 ## Project Structure
 

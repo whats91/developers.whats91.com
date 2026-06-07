@@ -2,6 +2,10 @@ node_modules/
 .next/
 out/
 build/
+logs/
+.deploy-tmp/
+active-deploy.lock
+.deploy.lock
 
 .env
 .env.*
