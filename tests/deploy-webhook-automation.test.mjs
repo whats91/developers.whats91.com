@@ -76,6 +76,19 @@ test("deploy webhook route validates optional trigger auth and launches detached
   ]);
 });
 
+test("deploy webhook route exposes a safe browser health check", () => {
+  const route = readRequiredFile("src/app/api/webhooks/deploy/route.ts");
+
+  assertContainsAll(route, [
+    "export async function GET",
+    "Deploy webhook is ready.",
+    "GitHub must call this endpoint with POST.",
+    "tokenConfigured",
+    "method: 'POST'",
+    "events: ['ping', 'push']",
+  ]);
+});
+
 test("deployment config and docs expose webhook setup", () => {
   const pkg = JSON.parse(readRequiredFile("package.json"));
   const envExample = readRequiredFile(".env.example");

@@ -100,6 +100,27 @@ function buildDeployEnv(projectRoot: string, sourceLabel: string) {
   }
 }
 
+export async function GET(request: NextRequest) {
+  if (!isAuthorized(request)) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Unauthorized deploy webhook request.',
+      },
+      { status: 401 }
+    )
+  }
+
+  return NextResponse.json({
+    success: true,
+    message: 'Deploy webhook is ready. GitHub must call this endpoint with POST.',
+    method: 'POST',
+    events: ['ping', 'push'],
+    branch: process.env.DEPLOY_BRANCH || 'main',
+    tokenConfigured: Boolean(process.env.DEPLOY_WEBHOOK_TOKEN?.trim()),
+  })
+}
+
 export async function POST(request: NextRequest) {
   if (!isAuthorized(request)) {
     return NextResponse.json(
