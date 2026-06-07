@@ -59,7 +59,6 @@ const CONFIG = {
     ".env.local",
     ".env.production",
     "node_modules",
-    ".next",
     "logs",
     ".deploy-tmp",
     "active-deploy.lock",
@@ -238,17 +237,6 @@ function syncDirectory(sourceDir, destinationDir, relPath = "") {
   }
 }
 
-function deleteNextBuildFolder() {
-  const nextPath = path.join(CONFIG.projectPath, ".next");
-  if (!fs.existsSync(nextPath)) {
-    log("Not found (skip): .next", "cyan");
-    return;
-  }
-
-  fs.rmSync(nextPath, { recursive: true, force: true });
-  log("Deleted: .next", "green");
-}
-
 async function prepareTempCheckout() {
   ensureDir(CONFIG.tempPath);
 
@@ -261,6 +249,19 @@ async function prepareTempCheckout() {
   await runCommand("git", ["fetch", "origin", CONFIG.branch], CONFIG.tempPath);
   await runCommand("git", ["reset", "--hard", `origin/${CONFIG.branch}`], CONFIG.tempPath);
   await runCommand("git", ["log", "-1", "--oneline"], CONFIG.tempPath);
+}
+
+function copyRuntimeEnvToTemp() {
+  const projectEnvPath = path.join(CONFIG.projectPath, ".env");
+  const tempEnvPath = path.join(CONFIG.tempPath, ".env");
+
+  if (!fs.existsSync(projectEnvPath)) {
+    log("Not found (skip): .env", "cyan");
+    return;
+  }
+
+  fs.copyFileSync(projectEnvPath, tempEnvPath);
+  log("Copied runtime .env into temp checkout for build", "cyan");
 }
 
 async function deploy() {
@@ -280,14 +281,14 @@ async function deploy() {
     await prepareTempCheckout();
     await sleep(CONFIG.delayMs);
 
+    copyRuntimeEnvToTemp();
+    await runCommand("npm", ["ci", "--include=dev"], CONFIG.tempPath);
+    await runCommand("npm", ["run", "build"], CONFIG.tempPath);
+    await sleep(CONFIG.delayMs);
+
     syncDirectory(CONFIG.tempPath, CONFIG.projectPath);
     await sleep(CONFIG.delayMs);
 
-    deleteNextBuildFolder();
-    await sleep(CONFIG.delayMs);
-
-    await runCommand("npm", ["ci", "--include=dev"], CONFIG.projectPath);
-    await runCommand("npm", ["run", "build"], CONFIG.projectPath);
     await runCommand(
       "pm2",
       ["startOrRestart", "ecosystem.config.cjs", "--update-env"],
