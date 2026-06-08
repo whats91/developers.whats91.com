@@ -14,6 +14,7 @@ Use this Markdown brief as implementation context for LLMs that need to generate
 - If a token is number-scoped or resolves one default sender, `senderId` can be omitted.
 - Template submissions are validated by Whats91, stored locally, and submitted to Meta for review.
 - Delivery of created templates happens later through Messaging APIs after approval.
+- AUTHENTICATION template creation is restricted for newly created accounts. The API must verify account age from server-side account meta and should require the account to be at least 14 days old by default, unless account meta contains an `authenticationTemplateEligibleAt` timestamp that is already in the past.
 
 ## Authentication
 
@@ -65,6 +66,7 @@ Compatibility body fields such as `authToken`, `auth_token`, or `token` can be a
 - `template.body.examples`: Required when body text contains variables such as `{{1}}`.
 - `template.buttons[0].type`: Required for AUTHENTICATION templates. Use `COPY_CODE`.
 - `template.buttons[0].example`: Required for AUTHENTICATION templates. Example OTP such as `123456`.
+- Account eligibility for AUTHENTICATION templates is not a request field. The server checks account meta such as `accountMeta.createdAt` and `authenticationTemplateEligibleAt`; client-supplied account age or eligibility flags must be ignored.
 
 ## Optional Fields
 
@@ -154,6 +156,26 @@ Meta submission failed:
 }
 ```
 
+Authentication account age restricted:
+
+```json
+{
+  "success": false,
+  "message": "Authentication template creation is restricted for newly created accounts",
+  "error_code": "AUTHENTICATION_TEMPLATE_ACCOUNT_AGE_RESTRICTED",
+  "details": {
+    "requiredMinimumAgeDays": 14,
+    "accountAgeDays": 3,
+    "accountMetaSource": "account meta",
+    "authenticationTemplateEligibleAt": "2026-06-21T00:00:00.000Z"
+  },
+  "metadata": {
+    "apiVersion": "v2",
+    "requestId": "request-uuid"
+  }
+}
+```
+
 ## Flow 1: Create a MARKETING Template
 
 Use MARKETING templates for offers, promotions, launches, events, coupons, and customer engagement.
@@ -223,6 +245,8 @@ curl -X POST "https://graph.whats91.com/api/v2/templates" \
 Use AUTHENTICATION templates for OTP, login verification, account recovery, and transaction confirmation.
 
 Authentication templates should not include URLs, emojis, headers, footers, or non-copy-code buttons. Use one `COPY_CODE` button with an example code.
+
+Before accepting this request, the API should check trusted account meta. Newly created accounts should be blocked until they are at least 14 days old, or until `authenticationTemplateEligibleAt` in account meta is in the past. Do not trust request-supplied account age.
 
 ```bash
 curl -X POST "https://graph.whats91.com/api/v2/templates" \
@@ -436,6 +460,8 @@ print_r($response);
 - Provide `template.body.examples` for every body placeholder.
 - Do not use unsupported button types for the selected category.
 - For AUTHENTICATION, use only one `COPY_CODE` button.
+- For AUTHENTICATION, confirm the server-side account meta shows the account is at least 14 days old or has a past `authenticationTemplateEligibleAt` value.
+- Handle `AUTHENTICATION_TEMPLATE_ACCOUNT_AGE_RESTRICTED` by waiting until the account eligibility date instead of retrying immediately.
 - Do not include media headers in AUTHENTICATION templates.
 - For media headers, use a public HTTPS `mediaUrl` or multipart `mediaFile`.
 - Check `metadata.requestId` when contacting support.

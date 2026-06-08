@@ -2586,6 +2586,29 @@ export const docSections: DocSectionData[] = [
       {
         type: 'heading',
         level: 2,
+        text: 'Account age eligibility',
+      },
+      {
+        type: 'paragraph',
+        text: 'Authentication template creation is restricted for newly created accounts. By default, the account must be at least 14 days old before AUTHENTICATION templates can be created, or account meta must contain an authenticationTemplateEligibleAt value that is already in the past.',
+      },
+      {
+        type: 'callout',
+        variant: 'warning',
+        text: 'The API must verify account age from trusted account meta on the server. Any request-supplied account age is ignored, so clients cannot bypass this restriction by sending their own creation date or eligibility flag.',
+      },
+      {
+        type: 'table',
+        headers: ['Account meta field', 'Required', 'Notes'],
+        rows: [
+          ['accountMeta.createdAt', 'Yes', 'Server-side account creation timestamp used to calculate account age.'],
+          ['accountMeta.authenticationTemplateEligibleAt', 'Optional', 'Explicit server-side eligibility timestamp. If present, AUTHENTICATION templates are allowed only after this value is in the past.'],
+          ['template.metadata.accountAge', 'No', 'Ignored. Client-provided age or eligibility values are not trusted.'],
+        ],
+      },
+      {
+        type: 'heading',
+        level: 2,
         text: 'Create Authentication Template API',
       },
       {
@@ -2678,6 +2701,25 @@ export const docSections: DocSectionData[] = [
   }
 }`,
             label: 'Validation Error Response',
+          },
+          {
+            language: 'json',
+            code: `{
+  "success": false,
+  "message": "Authentication template creation is restricted for newly created accounts",
+  "error_code": "AUTHENTICATION_TEMPLATE_ACCOUNT_AGE_RESTRICTED",
+  "details": {
+    "requiredMinimumAgeDays": 14,
+    "accountAgeDays": 3,
+    "accountMetaSource": "account meta",
+    "authenticationTemplateEligibleAt": "2026-06-21T00:00:00.000Z"
+  },
+  "metadata": {
+    "apiVersion": "v2",
+    "requestId": "request-uuid"
+  }
+}`,
+            label: 'Account Age Restriction Error Response',
           },
         ],
       },
