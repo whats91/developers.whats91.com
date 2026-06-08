@@ -36,6 +36,11 @@ test("deploy worker fetches the public main branch and performs production deplo
     "origin/${CONFIG.branch}",
     "copyRuntimeEnvToTemp()",
     "removeTempBuildOutput()",
+    "buildCommandEnv()",
+    "safeCommandEnvKeys",
+    "privateNextEnvPrefixes",
+    "NEXT_TELEMETRY_DISABLED",
+    "webhookRemovedPrivateNextEnv",
     "assertStandaloneBuild(CONFIG.tempPath)",
     "assertStandaloneBuild(CONFIG.projectPath)",
     "npm",
@@ -62,6 +67,11 @@ test("deploy worker fetches the public main branch and performs production deplo
   assert.doesNotMatch(deployScript, /syncExcludes:\s*\[[^\]]*"\.next"/);
   assert.doesNotMatch(deployScript, /deleteNextBuildFolder\(\)/);
   assert.match(deployScript, /baseName !== "\.env\.example"/);
+  assert.doesNotMatch(
+    deployScript,
+    /env:\s*\{\s*\.\.\.process\.env[\s\S]*NPM_CONFIG_YES/,
+    "deploy worker child commands must not inherit the full webhook/Next.js runtime environment",
+  );
 });
 
 test("deploy webhook route validates optional trigger auth and launches detached deployment", () => {
@@ -80,11 +90,22 @@ test("deploy webhook route validates optional trigger auth and launches detached
     "scripts/deploy.js",
     "spawn(",
     "detached: true",
+    "sanitizeDeployEnv",
+    "safePassthroughEnvKeys",
+    "privateNextEnvPrefixes",
+    "NEXT_TELEMETRY_DISABLED",
+    "DEPLOY_SANITIZED_PRIVATE_NEXT_ENV_REMOVED",
     "DEPLOY_TRIGGER_SOURCE",
     "deploy-webhook.log",
     "NextResponse.json",
     "status: 202",
   ]);
+
+  assert.doesNotMatch(
+    route,
+    /return\s*\{\s*\.\.\.process\.env[\s\S]*DEPLOY_TRIGGER_SOURCE/,
+    "webhook deploy env must not inherit the full live Next.js runtime environment",
+  );
 });
 
 test("deploy webhook route parses GitHub json and form encoded payloads", () => {

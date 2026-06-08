@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process'
+import { spawn, type SpawnOptions } from 'node:child_process'
 import { timingSafeEqual } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -9,6 +9,28 @@ type DeployPayload = {
   ref?: string
   payload?: string
 }
+
+const safePassthroughEnvKeys = [
+  'PATH',
+  'HOME',
+  'USER',
+  'LOGNAME',
+  'SHELL',
+  'LANG',
+  'LC_ALL',
+  'LC_CTYPE',
+  'TMPDIR',
+  'TEMP',
+  'TMP',
+  'TERM',
+]
+
+const privateNextEnvPrefixes = [
+  'NEXT_PRIVATE_',
+  '__NEXT_',
+  'TURBOPACK_',
+  'TURBO_',
+]
 
 function safeCompare(expected: string, provided: string) {
   const expectedBuffer = Buffer.from(expected)
@@ -102,13 +124,15 @@ function startDetachedDeployment(projectRoot: string, sourceLabel: string) {
     `(nohup ${quoteForShell(process.execPath)} ${quoteForShell(deployScriptPath)} >> ${quoteForShell(logPath)} 2>&1 < /dev/null & echo $!)`,
   ].join(' && ')
 
-  const child = spawn('/bin/sh', ['-lc', shellCommand], {
+  const spawnOptions: SpawnOptions = {
     cwd: projectRoot,
     detached: true,
-    env: buildDeployEnv(projectRoot, sourceLabel),
-    stdio: ['ignore', 'ignore', 'ignore'],
+    env: sanitizeDeployEnv(projectRoot, sourceLabel) as unknown as NodeJS.ProcessEnv,
+    stdio: 'ignore',
     windowsHide: true,
-  })
+  }
+
+  const child = spawn('/bin/sh', ['-lc', shellCommand], spawnOptions)
 
   child.unref()
 
@@ -118,20 +142,40 @@ function startDetachedDeployment(projectRoot: string, sourceLabel: string) {
   }
 }
 
-function buildDeployEnv(projectRoot: string, sourceLabel: string) {
-  return {
-    ...process.env,
-    ROOT_PATH: process.env.ROOT_PATH || projectRoot,
-    PROJECT_ROOT: process.env.PROJECT_ROOT || projectRoot,
-    DEPLOY_NON_INTERACTIVE: '1',
-    DEPLOY_TRIGGER_SOURCE: sourceLabel,
-    CI: process.env.CI || 'true',
-    GIT_TERMINAL_PROMPT: '0',
-    DEBIAN_FRONTEND: 'noninteractive',
-    NPM_CONFIG_YES: 'true',
-    npm_config_yes: 'true',
-    TERM: process.env.TERM || 'dumb',
+function sanitizeDeployEnv(projectRoot: string, sourceLabel: string) {
+  const env: Record<string, string> & { NODE_ENV: string } = {
+    NODE_ENV: 'production',
   }
+  const removedPrivateNextEnvCount = Object.keys(process.env).filter((key) =>
+    privateNextEnvPrefixes.some((prefix) => key.startsWith(prefix))
+  ).length
+
+  for (const key of safePassthroughEnvKeys) {
+    const value = process.env[key]
+    if (value) env[key] = value
+  }
+
+  for (const [key, value] of Object.entries(process.env)) {
+    if (!value) continue
+    if (privateNextEnvPrefixes.some((prefix) => key.startsWith(prefix))) continue
+    if (key === 'DEPLOY_WEBHOOK_TOKEN') continue
+    if (key.startsWith('DEPLOY_')) env[key] = value
+  }
+
+  env.ROOT_PATH = process.env.ROOT_PATH || projectRoot
+  env.PROJECT_ROOT = process.env.PROJECT_ROOT || projectRoot
+  env.DEPLOY_NON_INTERACTIVE = '1'
+  env.DEPLOY_TRIGGER_SOURCE = sourceLabel
+  env.DEPLOY_SANITIZED_PRIVATE_NEXT_ENV_REMOVED = String(removedPrivateNextEnvCount)
+  env.CI = 'true'
+  env.GIT_TERMINAL_PROMPT = '0'
+  env.DEBIAN_FRONTEND = 'noninteractive'
+  env.NPM_CONFIG_YES = 'true'
+  env.npm_config_yes = 'true'
+  env.NEXT_TELEMETRY_DISABLED = '1'
+  env.TERM = env.TERM || 'dumb'
+
+  return env
 }
 
 export async function GET(request: NextRequest) {

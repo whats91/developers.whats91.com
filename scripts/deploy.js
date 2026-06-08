@@ -68,6 +68,29 @@ const CONFIG = {
   ],
 };
 
+const safeCommandEnvKeys = [
+  "PATH",
+  "HOME",
+  "USER",
+  "LOGNAME",
+  "SHELL",
+  "LANG",
+  "LC_ALL",
+  "LC_CTYPE",
+  "TMPDIR",
+  "TEMP",
+  "TMP",
+  "TERM",
+  "PORT",
+];
+
+const privateNextEnvPrefixes = [
+  "NEXT_PRIVATE_",
+  "__NEXT_",
+  "TURBOPACK_",
+  "TURBO_",
+];
+
 const colors = {
   reset: "\x1b[0m",
   green: "\x1b[32m",
@@ -106,26 +129,69 @@ function shouldExcludePath(relPath) {
   return false;
 }
 
+function buildCommandEnv() {
+  const env = {};
+
+  for (const key of safeCommandEnvKeys) {
+    if (process.env[key]) env[key] = process.env[key];
+  }
+
+  for (const [key, value] of Object.entries(process.env)) {
+    if (!value) continue;
+    if (privateNextEnvPrefixes.some((prefix) => key.startsWith(prefix))) continue;
+    if (key === "DEPLOY_WEBHOOK_TOKEN") continue;
+    if (key.startsWith("DEPLOY_")) env[key] = value;
+  }
+
+  return {
+    ...env,
+    ROOT_PATH: process.env.ROOT_PATH || CONFIG.projectPath,
+    PROJECT_ROOT: process.env.PROJECT_ROOT || CONFIG.projectPath,
+    NODE_ENV: "production",
+    CI: "true",
+    GIT_TERMINAL_PROMPT: "0",
+    DEBIAN_FRONTEND: "noninteractive",
+    NPM_CONFIG_YES: "true",
+    npm_config_yes: "true",
+    NPM_CONFIG_PRODUCTION: "false",
+    npm_config_production: "false",
+    NPM_CONFIG_OMIT: "",
+    npm_config_omit: "",
+    NEXT_TELEMETRY_DISABLED: "1",
+    TERM: env.TERM || "dumb",
+  };
+}
+
+function logCommandEnv(env) {
+  const privateNextEnvCount = Object.keys(process.env).filter((key) =>
+    privateNextEnvPrefixes.some((prefix) => key.startsWith(prefix))
+  ).length;
+
+  log(
+    [
+      "Command env:",
+      `NODE_ENV=${env.NODE_ENV}`,
+      `CI=${env.CI}`,
+      `PATH=${env.PATH ? "set" : "missing"}`,
+      `NEXT_TELEMETRY_DISABLED=${env.NEXT_TELEMETRY_DISABLED}`,
+      `removedPrivateNextEnv=${privateNextEnvCount}`,
+      `webhookRemovedPrivateNextEnv=${env.DEPLOY_SANITIZED_PRIVATE_NEXT_ENV_REMOVED || "0"}`,
+    ].join(" "),
+    "cyan"
+  );
+}
+
 function runCommand(command, args, cwd) {
   return new Promise((resolve, reject) => {
     log(`Running: ${command} ${args.join(" ")}`, "cyan");
+    const commandEnv = buildCommandEnv();
+    logCommandEnv(commandEnv);
 
     const child = spawn(command, args, {
       cwd,
       stdio: "inherit",
       shell: false,
-      env: {
-        ...process.env,
-        CI: process.env.CI || "true",
-        GIT_TERMINAL_PROMPT: "0",
-        DEBIAN_FRONTEND: "noninteractive",
-        NPM_CONFIG_YES: "true",
-        npm_config_yes: "true",
-        NPM_CONFIG_PRODUCTION: "false",
-        npm_config_production: "false",
-        NPM_CONFIG_OMIT: "",
-        npm_config_omit: "",
-      },
+      env: commandEnv,
     });
 
     child.on("error", reject);
