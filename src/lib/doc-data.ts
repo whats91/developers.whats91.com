@@ -253,6 +253,16 @@ export const docCategories: DocCategoryData[] = [
     ],
   },
   {
+    id: 'crm',
+    label: 'CRM',
+    slug: 'crm',
+    icon: 'UsersRound',
+    sections: [
+      { id: 'crm-lead-generation', title: 'Lead Generation', slug: 'lead-generation' },
+      { id: 'crm-complaint-creation', title: 'Complaint Creation', slug: 'complaint-creation' },
+    ],
+  },
+  {
     id: 'changelog',
     label: 'Changelog',
     slug: 'changelog',
@@ -7437,6 +7447,798 @@ app.post('/webhooks/whats91', async (req, res) => {
   },
 
   // =========================================================================
+  // CRM
+  // =========================================================================
+  {
+    id: 'crm-lead-generation',
+    title: 'Lead Generation',
+    slug: 'lead-generation',
+    description: 'Create CRM leads from public API integrations, Flow Builder custom API nodes, and tokenless company-URL submissions.',
+    summary: 'Use CRM Lead Generation APIs to create company-scoped CRM leads through the canonical Whats91 public API v2 routes, with bearer-token authentication or a tokenless company-UID URL for controlled embedded workflows.',
+    prerequisites: [
+      'A Whats91 CRM company UID such as crmco_abc',
+      'A global customer-level public API token for POST /api/v2/crm/leads',
+      'A lead payload containing lead.fields with Email, MobilePhone, or Phone',
+    ],
+    seoTitle: 'CRM Lead Generation API | Whats91 Developer Documentation',
+    seoDescription: 'Create Whats91 CRM leads through public API v2 using bearer-token or company-UID URL integrations, with field mapping, customer matching, responses, and error examples.',
+    relatedSectionIds: ['crm-complaint-creation', 'contact-book-create', 'webhook-examples', 'conversations-list'],
+    category: 'crm',
+    icon: 'UsersRound',
+    faqs: [
+      {
+        question: 'Which CRM lead endpoint should I use?',
+        answer: 'Use POST /api/v2/crm/leads when your server can send a bearer token. Use POST /api/v2/crm/companies/{companyUid}/leads only when the integration cannot send an Authorization header and the CRM company UID is embedded in the URL.',
+      },
+      {
+        question: 'Is companyUid required?',
+        answer: 'companyUid is required in the JSON body for the bearer-token route. On the company-URL route, the companyUid path parameter is authoritative and the request body can omit companyUid.',
+      },
+      {
+        question: 'How does CRM link leads to existing customers?',
+        answer: 'CRM attempts email and phone matching inside the selected company before saving the lead. If a matching CRM customer or contact is found, the lead stores those CRM links; otherwise the lead is still created without a customer link.',
+      },
+    ],
+    content: [
+      {
+        type: 'heading',
+        level: 1,
+        text: 'CRM Lead Generation',
+      },
+      {
+        type: 'paragraph',
+        text: 'Create CRM leads in the dedicated Whats91 CRM database while keeping public API authentication in the main Whats91 backend. Lead creation is company-scoped and can automatically link new leads to existing CRM customers when email or phone values match.',
+      },
+      {
+        type: 'callout',
+        variant: 'info',
+        text: 'This phase documents Lead Generation only. Complaint Management APIs are intentionally not included here and will be documented in a later CRM phase.',
+      },
+      {
+        type: 'heading',
+        level: 2,
+        text: 'Endpoint Overview',
+      },
+      {
+        type: 'table',
+        headers: ['Method', 'Path', 'Purpose'],
+        rows: [
+          ['POST', '/api/v2/crm/leads', 'Create a CRM lead with bearer-token authentication.'],
+          ['POST', '/api/v2/crm/companies/{companyUid}/leads', 'Create a CRM lead through a company-UID URL without bearer-token authentication.'],
+        ],
+      },
+      {
+        type: 'cards',
+        cards: [
+          {
+            title: 'Bearer-token route',
+            value: 'POST /crm/leads',
+            description: 'Use this server-side route when your integration can send Authorization: Bearer w91_public_token_here. The JSON body must include companyUid.',
+            tone: 'green',
+          },
+          {
+            title: 'Tokenless company-URL route',
+            value: 'POST /companies/{companyUid}/leads',
+            description: 'Use this tokenless company-URL route for controlled form or Flow Builder submissions where the company UID is embedded in the endpoint URL.',
+            tone: 'blue',
+          },
+        ],
+      },
+      {
+        type: 'heading',
+        level: 2,
+        text: 'Authentication',
+      },
+      {
+        type: 'paragraph',
+        text: 'The bearer-token route requires a global public API token. Number-scoped public API tokens are rejected with TOKEN_SCOPE_NOT_ALLOWED because CRM leads are company-scoped resources, not sender-scoped resources.',
+      },
+      {
+        type: 'code',
+        language: 'http',
+        code: 'Authorization: Bearer w91_public_token_here',
+        label: 'Bearer token header',
+      },
+      {
+        type: 'paragraph',
+        text: 'For POST compatibility, authToken, auth_token, or token can also be sent in the JSON body. The bearer token takes precedence when both header and body tokens are present.',
+      },
+      {
+        type: 'paragraph',
+        text: 'For the company-URL route, do not send an Authorization header. The companyUid in the URL selects the target CRM company and customer context. If companyUid is also present in the request body, the URL companyUid remains the source of truth.',
+      },
+      {
+        type: 'heading',
+        level: 2,
+        text: 'Create Lead With Bearer Token',
+      },
+      {
+        type: 'api',
+        method: 'POST',
+        endpoint: '/api/v2/crm/leads',
+        parameters: [
+          { name: 'Authorization', type: 'header', required: true, description: 'Bearer w91_public_token_here. Must be a global customer-level public API token.' },
+          { name: 'Content-Type', type: 'header', required: true, description: 'Use application/json.' },
+          { name: 'companyUid', type: 'string', required: true, description: 'CRM company UID because the bearer-token URL is static.' },
+          { name: 'lead.fields', type: 'object', required: true, description: 'Lead field object. Include Email, MobilePhone, or Phone.' },
+        ],
+        request: [
+          {
+            language: 'json',
+            code: `{
+  "companyUid": "crmco_abc",
+  "lead": {
+    "fields": {
+      "FirstName": "Asha",
+      "LastName": "Patel",
+      "Company": "Acme Pvt Ltd",
+      "Title": "Operations Manager",
+      "Email": "asha@example.com",
+      "MobilePhone": "919999999999",
+      "City": "Indore",
+      "State": "Madhya Pradesh",
+      "Country": "India",
+      "Description": "Needs a CRM follow-up",
+      "LeadSourceUid": "crmlsrc_web",
+      "StatusUid": "crmlstat_new",
+      "Priority": "high",
+      "ExternalReferenceId": "sf-lead-1"
+    }
+  }
+}`,
+            label: 'Bearer-token request body',
+          },
+          {
+            language: 'curl',
+            code: `curl -X POST "https://graph.whats91.com/api/v2/crm/leads" \\
+  -H "Authorization: Bearer w91_public_token_here" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "companyUid": "crmco_abc",
+    "lead": {
+      "fields": {
+        "FirstName": "Asha",
+        "LastName": "Patel",
+        "Company": "Acme Pvt Ltd",
+        "Email": "asha@example.com",
+        "MobilePhone": "919999999999",
+        "Description": "Needs a CRM follow-up",
+        "Priority": "high",
+        "ExternalReferenceId": "sf-lead-1"
+      }
+    }
+  }'`,
+            label: 'Create lead with bearer token',
+          },
+        ],
+        response: [
+          {
+            language: 'json',
+            code: `{
+  "success": true,
+  "message": "CRM lead created",
+  "data": {
+    "lead": {
+      "leadUid": "crml_abc",
+      "uid": "crml_abc",
+      "crmCustomerUid": "crmcust_abc",
+      "crmCustomerContactUid": "crmcontact_abc",
+      "leadTitle": "Asha Patel",
+      "firstName": "Asha",
+      "lastName": "Patel",
+      "fullName": "Asha Patel",
+      "prospectCompanyName": "Acme Pvt Ltd",
+      "email": "asha@example.com",
+      "mobileNumber": "919999999999",
+      "priority": "high",
+      "captureMethod": "api",
+      "source": {
+        "sourceUid": "crmlsrc_web",
+        "uid": "crmlsrc_web",
+        "name": "Website"
+      },
+      "status": {
+        "statusUid": "crmlstat_new",
+        "uid": "crmlstat_new",
+        "name": "New"
+      },
+      "recordStatus": "active",
+      "createdAt": "2026-06-16T08:00:00.000Z",
+      "updatedAt": "2026-06-16T08:00:00.000Z"
+    }
+  },
+  "metadata": {
+    "apiVersion": "v2",
+    "requestId": "request-uuid"
+  }
+}`,
+            label: 'Success Response',
+          },
+        ],
+      },
+      {
+        type: 'heading',
+        level: 2,
+        text: 'Create Lead With Company UID URL',
+      },
+      {
+        type: 'paragraph',
+        text: 'Use the company-URL route for tokenless form submissions or Flow Builder Custom API nodes where the CRM company UID is already embedded in the endpoint URL.',
+      },
+      {
+        type: 'api',
+        method: 'POST',
+        endpoint: '/api/v2/crm/companies/{companyUid}/leads',
+        parameters: [
+          { name: 'Content-Type', type: 'header', required: true, description: 'Use application/json.' },
+          { name: 'companyUid', type: 'path', required: true, description: 'CRM company UID in the URL. This value is the source of truth.' },
+          { name: 'lead.fields', type: 'object', required: true, description: 'Lead field object. Include Email, MobilePhone, or Phone.' },
+        ],
+        request: [
+          {
+            language: 'json',
+            code: `{
+  "lead": {
+    "fields": {
+      "Email": "asha@example.com",
+      "MobilePhone": "919999999999",
+      "Description": "Lead captured from a Whats91 flow"
+    }
+  }
+}`,
+            label: 'Tokenless request body',
+          },
+          {
+            language: 'curl',
+            code: `curl -X POST "https://graph.whats91.com/api/v2/crm/companies/crmco_abc/leads" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "lead": {
+      "fields": {
+        "Email": "asha@example.com",
+        "MobilePhone": "919999999999",
+        "Description": "Lead captured from a Whats91 flow"
+      }
+    }
+  }'`,
+            label: 'Create lead with company UID URL',
+          },
+        ],
+        response: [
+          {
+            language: 'json',
+            code: `{
+  "success": true,
+  "message": "CRM lead created",
+  "data": {
+    "lead": {
+      "leadUid": "crml_abc",
+      "uid": "crml_abc",
+      "email": "asha@example.com",
+      "mobileNumber": "919999999999",
+      "captureMethod": "api",
+      "recordStatus": "active"
+    }
+  },
+  "metadata": {
+    "apiVersion": "v2",
+    "requestId": "request-uuid"
+  }
+}`,
+            label: 'Tokenless success response',
+          },
+        ],
+      },
+      {
+        type: 'callout',
+        variant: 'warning',
+        text: 'The company-URL route is tokenless by design. Only expose URLs for companies and workflows where URL-based lead capture is acceptable.',
+      },
+      {
+        type: 'heading',
+        level: 2,
+        text: 'Flow Builder Custom API Setup',
+      },
+      {
+        type: 'table',
+        headers: ['Setup', 'Bearer-token route', 'Tokenless company-URL route'],
+        rows: [
+          ['Endpoint URL', 'https://graph.whats91.com/api/v2/crm/leads', 'https://graph.whats91.com/api/v2/crm/companies/crmco_abc/leads'],
+          ['Auth Mode', 'Bearer token', 'No auth / URL-based access'],
+          ['Bearer Token', '{{variables.crm_public_api_token}} or another saved flow variable', 'Leave blank'],
+          ['Payload', 'Must include companyUid and lead.fields', 'Should omit companyUid and include lead.fields'],
+        ],
+      },
+      {
+        type: 'heading',
+        level: 2,
+        text: 'Request Fields',
+      },
+      {
+        type: 'paragraph',
+        text: 'The request body must contain a lead.fields object. Unsupported fields are rejected with VALIDATION_FAILED so lead data is not silently dropped. At least one contact value is required: Email, MobilePhone, or Phone. Name and company fields are optional and are never required for public lead creation.',
+      },
+      {
+        type: 'table',
+        headers: ['Field', 'CRM mapping', 'Notes'],
+        rows: [
+          ['LeadTitle', 'leadTitle', 'Optional. Defaults from full name when omitted.'],
+          ['FirstName', 'firstName', 'Optional.'],
+          ['LastName', 'lastName', 'Optional.'],
+          ['Name / FullName', 'fullName', 'Optional. If omitted, first and last name are combined.'],
+          ['Company', 'prospectCompanyName', 'Optional prospect company name.'],
+          ['Title', 'jobTitle', 'Optional job title.'],
+          ['Email', 'email', 'Optional, lowercased by CRM validation.'],
+          ['MobilePhone', 'mobileNumber', 'Optional mobile number.'],
+          ['Phone', 'alternatePhone', 'Optional phone number. Also used for customer matching when MobilePhone is absent.'],
+          ['Website', 'website', 'Optional website URL or text.'],
+          ['Street / Address', 'address', 'Optional address line.'],
+          ['City', 'city', 'Optional.'],
+          ['State', 'state', 'Optional.'],
+          ['Country', 'country', 'Optional.'],
+          ['PostalCode / Pincode', 'pincode', 'Optional.'],
+          ['Description', 'requirementSummary', 'Optional notes or requirement summary.'],
+          ['LeadSourceUid', 'leadSourceUid', 'Optional CRM lead source UID. Omit to use CRM default.'],
+          ['StatusUid', 'statusUid', 'Optional CRM lead status UID. Omit to use CRM default.'],
+          ['OwnerPrincipalKey', 'ownerPrincipalKey', 'Optional CRM owner principal key, such as a permitted team member.'],
+          ['Priority', 'priority', 'Optional: low, medium, high, or urgent.'],
+          ['LeadScore', 'leadScore', 'Optional integer.'],
+          ['EstimatedValue', 'estimatedValue', 'Optional numeric value.'],
+          ['ExternalReferenceType', 'externalReferenceType', 'Optional external system type.'],
+          ['ExternalReferenceId', 'externalReferenceId', 'Optional external id. If provided without a type, the type defaults to public_api.'],
+        ],
+      },
+      {
+        type: 'callout',
+        variant: 'info',
+        text: 'The current CRM lead table does not store Salesforce CurrencyCode or ExpectedClosureDate, so those fields are rejected until the CRM lead schema is extended.',
+      },
+      {
+        type: 'heading',
+        level: 2,
+        text: 'Automatic Customer Matching',
+      },
+      {
+        type: 'list',
+        items: [
+          'CRM checks existing customer data for the same companyUid after validation and before saving the lead.',
+          'Email matching is exact after normalizing case and surrounding spaces.',
+          'Customer contacts and customer primary email are both checked.',
+          'Phone matching treats MobilePhone and Phone as lead contact numbers.',
+          'Phone values are normalized to digits before matching, so plus signs, spaces, hyphens, brackets, and dots do not affect matching.',
+          'Exact digit matches are checked first across customer mobile and WhatsApp fields.',
+          'For Indian customers, CRM also matches the last 10 digits, so +91 98765 43210 and 9876543210 resolve to the same customer.',
+          'Mobile and WhatsApp numbers are treated equally for matching.',
+        ],
+      },
+      {
+        type: 'paragraph',
+        text: 'If a match is found, the lead stores the linked CRM customer and, when the match came from a contact row, the linked CRM customer contact. If no match is found, the lead is still created normally without a customer link.',
+      },
+      {
+        type: 'callout',
+        variant: 'info',
+        text: 'Internal database ids, Whats91 user ids, and private token details are never returned in public CRM lead responses.',
+      },
+      {
+        type: 'heading',
+        level: 2,
+        text: 'Error Responses',
+      },
+      {
+        type: 'table',
+        headers: ['HTTP', 'Error code', 'Cause'],
+        rows: [
+          ['400', 'VALIDATION_FAILED', 'Missing body companyUid on the bearer-token route, missing lead.fields, unsupported field, invalid priority, invalid capture method, or CRM lead validation failure.'],
+          ['401', 'MISSING_AUTH_TOKEN', 'Bearer-token route only: no bearer token or compatible token body field was provided.'],
+          ['401', 'INVALID_AUTH_TOKEN', 'Bearer-token route only: the public API token is invalid.'],
+          ['403', 'TOKEN_SCOPE_NOT_ALLOWED', 'Bearer-token route only: a number-scoped public API token was used.'],
+          ['403', 'CUSTOMER_TOKEN_REQUIRED', 'Bearer-token route only: the token does not belong to a customer account.'],
+          ['403', 'FORBIDDEN', 'Company-URL route only: the CRM company is inactive.'],
+          ['404', 'NOT_FOUND', 'The CRM company or referenced CRM setup row was not found.'],
+        ],
+      },
+      {
+        type: 'code',
+        language: 'json',
+        code: `{
+  "success": false,
+  "message": "Missing required field: companyUid",
+  "error_code": "VALIDATION_FAILED",
+  "details": {},
+  "metadata": {
+    "apiVersion": "v2",
+    "requestId": "request-uuid"
+  }
+}`,
+        label: 'Validation Error Response',
+      },
+    ],
+  },
+
+  // -------------------------------------------------------------------------
+  {
+    id: 'crm-complaint-creation',
+    title: 'Complaint Creation',
+    slug: 'complaint-creation',
+    description: 'Create CRM complaints from public API integrations, customer forms, Flow Builder custom API nodes, and tokenless company-URL submissions.',
+    summary: 'Use CRM Complaint Creation APIs to create company-scoped complaint tickets through the canonical Whats91 public API v2 routes, with bearer-token authentication or a tokenless company-UID URL for controlled embedded intake workflows.',
+    prerequisites: [
+      'A Whats91 CRM company UID such as crmco_abc',
+      'A global customer-level public API token for POST /api/v2/crm/complaints',
+      'A complaint payload containing complaint.fields with ComplaintTitle and Description',
+    ],
+    seoTitle: 'CRM Complaint Creation API | Whats91 Developer Documentation',
+    seoDescription: 'Create Whats91 CRM complaints through public API v2 using bearer-token or company-UID URL integrations, with field mapping, customer matching, responses, and error examples.',
+    relatedSectionIds: ['crm-lead-generation', 'webhook-examples', 'conversations-list', 'reports-all'],
+    category: 'crm',
+    icon: 'UsersRound',
+    faqs: [
+      {
+        question: 'Which CRM complaint endpoint should I use?',
+        answer: 'Use POST /api/v2/crm/complaints when your server can send a bearer token. Use POST /api/v2/crm/companies/{companyUid}/complaints only when the integration cannot send an Authorization header and the CRM company UID is embedded in the URL.',
+      },
+      {
+        question: 'Which complaint fields are required?',
+        answer: 'complaint.fields must include a complaint title and description. Supported title aliases include ComplaintTitle, Subject, and Title. Supported description aliases include Description, Message, and Issue.',
+      },
+      {
+        question: 'Can CRM match complaints to existing customers?',
+        answer: 'Yes. When Email, MobilePhone, MobileNumber, or Phone is present, CRM normalizes contact values and attempts to link the complaint to an existing customer or contact in the selected company.',
+      },
+    ],
+    content: [
+      {
+        type: 'heading',
+        level: 1,
+        text: 'CRM Complaint Creation',
+      },
+      {
+        type: 'paragraph',
+        text: 'Create CRM complaint tickets in the dedicated Whats91 CRM database while keeping public API authentication in the main Whats91 backend. Complaint creation is company-scoped and can automatically link complaints to existing CRM customers when email or phone values match.',
+      },
+      {
+        type: 'heading',
+        level: 2,
+        text: 'Endpoint Overview',
+      },
+      {
+        type: 'table',
+        headers: ['Method', 'Path', 'Purpose'],
+        rows: [
+          ['POST', '/api/v2/crm/complaints', 'Create a CRM complaint with bearer-token authentication.'],
+          ['POST', '/api/v2/crm/companies/{companyUid}/complaints', 'Create a CRM complaint through a company-UID URL without bearer-token authentication.'],
+        ],
+      },
+      {
+        type: 'cards',
+        cards: [
+          {
+            title: 'Bearer-token route',
+            value: 'POST /crm/complaints',
+            description: 'Use this server-side route when your integration can send Authorization: Bearer w91_public_token_here. The JSON body must include companyUid.',
+            tone: 'green',
+          },
+          {
+            title: 'Tokenless company-URL route',
+            value: 'POST /companies/{companyUid}/complaints',
+            description: 'Use this tokenless company-URL route for controlled customer forms or Flow Builder submissions where the company UID is embedded in the endpoint URL.',
+            tone: 'blue',
+          },
+        ],
+      },
+      {
+        type: 'heading',
+        level: 2,
+        text: 'Authentication',
+      },
+      {
+        type: 'paragraph',
+        text: 'The bearer-token route requires a global public API token. Number-scoped public API tokens are rejected with TOKEN_SCOPE_NOT_ALLOWED because CRM complaints are company-scoped resources, not sender-scoped resources.',
+      },
+      {
+        type: 'code',
+        language: 'http',
+        code: 'Authorization: Bearer w91_public_token_here',
+        label: 'Bearer token header',
+      },
+      {
+        type: 'paragraph',
+        text: 'For POST compatibility, authToken, auth_token, or token can also be sent in the JSON body. The bearer token takes precedence when both header and body tokens are present.',
+      },
+      {
+        type: 'paragraph',
+        text: 'For the company-URL route, do not send an Authorization header. The companyUid in the URL selects the target CRM company. If companyUid is also present in the request body, the URL companyUid remains the source of truth.',
+      },
+      {
+        type: 'heading',
+        level: 2,
+        text: 'Create Complaint With Bearer Token',
+      },
+      {
+        type: 'api',
+        method: 'POST',
+        endpoint: '/api/v2/crm/complaints',
+        parameters: [
+          { name: 'Authorization', type: 'header', required: true, description: 'Bearer w91_public_token_here. Must be a global customer-level public API token.' },
+          { name: 'Content-Type', type: 'header', required: true, description: 'Use application/json.' },
+          { name: 'companyUid', type: 'string', required: true, description: 'CRM company UID because the bearer-token URL is static.' },
+          { name: 'complaint.fields', type: 'object', required: true, description: 'Complaint field object. Include ComplaintTitle and Description or supported aliases.' },
+        ],
+        request: [
+          {
+            language: 'json',
+            code: `{
+  "companyUid": "crmco_abc",
+  "complaint": {
+    "fields": {
+      "ComplaintTitle": "WhatsApp API is not working",
+      "Description": "Customer reports API failures since morning.",
+      "CustomerName": "Dev Test",
+      "Email": "person@example.com",
+      "MobilePhone": "919999999999",
+      "CategoryUid": "crmccat_general",
+      "PriorityUid": "crmcp_low",
+      "ExternalReferenceId": "flow-ticket-1001"
+    }
+  }
+}`,
+            label: 'Bearer-token request body',
+          },
+          {
+            language: 'curl',
+            code: `curl -X POST "https://graph.whats91.com/api/v2/crm/complaints" \\
+  -H "Authorization: Bearer w91_public_token_here" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "companyUid": "crmco_abc",
+    "complaint": {
+      "fields": {
+        "ComplaintTitle": "WhatsApp API is not working",
+        "Description": "Customer reports API failures since morning.",
+        "CustomerName": "Dev Test",
+        "Email": "person@example.com",
+        "MobilePhone": "919999999999",
+        "PriorityUid": "crmcp_low",
+        "ExternalReferenceId": "flow-ticket-1001"
+      }
+    }
+  }'`,
+            label: 'Create complaint with bearer token',
+          },
+        ],
+        response: [
+          {
+            language: 'json',
+            code: `{
+  "success": true,
+  "message": "CRM complaint created",
+  "data": {
+    "complaint": {
+      "complaintUid": "crmc_abc",
+      "uid": "crmc_abc",
+      "complaintNumber": "CMP-00001",
+      "complaintTitle": "WhatsApp API is not working",
+      "description": "Customer reports API failures since morning.",
+      "submittedEmail": "person@example.com",
+      "submittedMobileNumber": "919999999999",
+      "intakeMethod": "api",
+      "source": {
+        "sourceUid": "crmcs_api",
+        "uid": "crmcs_api",
+        "name": "API"
+      },
+      "status": {
+        "statusUid": "crmcst_open",
+        "uid": "crmcst_open",
+        "name": "Open"
+      },
+      "recordStatus": "active",
+      "createdAt": "2026-06-16T08:30:00.000Z",
+      "updatedAt": "2026-06-16T08:30:00.000Z"
+    }
+  },
+  "metadata": {
+    "apiVersion": "v2",
+    "requestId": "request-uuid"
+  }
+}`,
+            label: 'Success Response',
+          },
+        ],
+      },
+      {
+        type: 'heading',
+        level: 2,
+        text: 'Create Complaint With Company UID URL',
+      },
+      {
+        type: 'paragraph',
+        text: 'Use the company-URL route for tokenless submissions when the integration cannot pass an Authorization header. The request body can omit companyUid because the URL value is authoritative.',
+      },
+      {
+        type: 'api',
+        method: 'POST',
+        endpoint: '/api/v2/crm/companies/{companyUid}/complaints',
+        parameters: [
+          { name: 'Content-Type', type: 'header', required: true, description: 'Use application/json.' },
+          { name: 'companyUid', type: 'path', required: true, description: 'CRM company UID in the URL. This value is the source of truth.' },
+          { name: 'complaint.fields', type: 'object', required: true, description: 'Complaint field object. Include title and description fields.' },
+        ],
+        request: [
+          {
+            language: 'json',
+            code: `{
+  "complaint": {
+    "fields": {
+      "Subject": "Billing issue",
+      "Message": "Invoice total does not match the order.",
+      "Phone": "+91 99999 99999"
+    }
+  }
+}`,
+            label: 'Tokenless request body',
+          },
+          {
+            language: 'curl',
+            code: `curl -X POST "https://graph.whats91.com/api/v2/crm/companies/crmco_abc/complaints" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "complaint": {
+      "fields": {
+        "Subject": "Billing issue",
+        "Message": "Invoice total does not match the order.",
+        "Phone": "+91 99999 99999"
+      }
+    }
+  }'`,
+            label: 'Create complaint with company UID URL',
+          },
+        ],
+        response: [
+          {
+            language: 'json',
+            code: `{
+  "success": true,
+  "message": "CRM complaint created",
+  "data": {
+    "complaint": {
+      "complaintUid": "crmc_abc",
+      "uid": "crmc_abc",
+      "complaintNumber": "CMP-00001",
+      "complaintTitle": "Billing issue",
+      "description": "Invoice total does not match the order.",
+      "submittedMobileNumber": "9999999999",
+      "intakeMethod": "api",
+      "recordStatus": "active"
+    }
+  },
+  "metadata": {
+    "apiVersion": "v2",
+    "requestId": "request-uuid"
+  }
+}`,
+            label: 'Tokenless success response',
+          },
+        ],
+      },
+      {
+        type: 'callout',
+        variant: 'warning',
+        text: 'The company-URL complaint route is tokenless by design. Use it only for controlled complaint intake workflows where URL-based access is acceptable.',
+      },
+      {
+        type: 'heading',
+        level: 2,
+        text: 'Request Body',
+      },
+      {
+        type: 'paragraph',
+        text: 'The request body must contain a complaint.fields object. ComplaintTitle and Description are required, though Subject or Title can be used for the title and Message or Issue can be used for the description. Unsupported fields are rejected with VALIDATION_FAILED.',
+      },
+      {
+        type: 'heading',
+        level: 2,
+        text: 'Supported Fields',
+      },
+      {
+        type: 'table',
+        headers: ['Field', 'CRM mapping'],
+        rows: [
+          ['ComplaintTitle / Subject / Title', 'complaintTitle'],
+          ['Description / Message / Issue', 'description'],
+          ['CustomerName / Name', 'submittedCustomerName'],
+          ['Company / CompanyName', 'submittedCompanyName'],
+          ['Email', 'submittedEmail'],
+          ['MobilePhone / MobileNumber / Phone', 'submittedMobileNumber'],
+          ['Address', 'submittedAddress'],
+          ['SourceUid / ComplaintSourceUid', 'sourceUid'],
+          ['StatusUid', 'statusUid'],
+          ['PriorityUid', 'priorityUid'],
+          ['CategoryUid', 'categoryUid'],
+          ['QueueUid', 'queueUid'],
+          ['AssigneePrincipalKey', 'assigneePrincipalKey'],
+          ['ExternalReferenceType', 'externalReferenceType'],
+          ['ExternalReferenceId', 'externalReferenceId'],
+          ['RelatedOrderReference', 'relatedOrderReference'],
+          ['NextFollowUpAt', 'nextFollowUpAt'],
+        ],
+      },
+      {
+        type: 'callout',
+        variant: 'info',
+        text: 'If ExternalReferenceId is provided without ExternalReferenceType, the type defaults to public_api. Public complaints are saved with intakeMethod: "api".',
+      },
+      {
+        type: 'heading',
+        level: 2,
+        text: 'Customer Matching',
+      },
+      {
+        type: 'list',
+        items: [
+          'CRM attempts to link the complaint to an existing account or contact in the same company when email or phone data is present.',
+          'Email matching is exact after trimming and lowercasing.',
+          'Phone values are normalized to digits before matching.',
+          'Mobile and WhatsApp numbers are treated equally.',
+          'For India, CRM also matches the last 10 digits so values with or without +91 resolve to the same customer.',
+          'If no customer is found, the complaint is still created normally.',
+        ],
+      },
+      {
+        type: 'heading',
+        level: 2,
+        text: 'Response Headers',
+      },
+      {
+        type: 'list',
+        items: [
+          'X-Whats91-Request-Id: request id for support and log correlation.',
+          'X-Whats91-Crm-Complaint-Uid: public CRM complaint UID created by the request.',
+        ],
+      },
+      {
+        type: 'callout',
+        variant: 'info',
+        text: 'Internal database ids, Whats91 user ids, tokens, encrypted values, and raw private payloads are never returned in public CRM complaint responses.',
+      },
+      {
+        type: 'heading',
+        level: 2,
+        text: 'Error Responses',
+      },
+      {
+        type: 'table',
+        headers: ['HTTP', 'Error code', 'Cause'],
+        rows: [
+          ['400', 'VALIDATION_FAILED', 'Missing companyUid, missing complaint.fields, missing title/description, unsupported field, or CRM complaint validation failure.'],
+          ['401', 'MISSING_AUTH_TOKEN', 'Bearer-token route only: no bearer token or compatible token body field was provided.'],
+          ['401', 'INVALID_AUTH_TOKEN', 'Bearer-token route only: the public API token is invalid.'],
+          ['403', 'TOKEN_SCOPE_NOT_ALLOWED', 'Bearer-token route only: a number-scoped public API token was used.'],
+          ['403', 'CUSTOMER_TOKEN_REQUIRED', 'Bearer-token route only: the token does not belong to a customer account.'],
+          ['403', 'FORBIDDEN', 'Company-URL route only: the CRM company is inactive or unavailable for public access.'],
+          ['404', 'NOT_FOUND', 'The CRM company or referenced CRM setup row was not found.'],
+        ],
+      },
+      {
+        type: 'code',
+        language: 'json',
+        code: `{
+  "success": false,
+  "message": "Complaint title and description are required",
+  "error_code": "VALIDATION_FAILED",
+  "details": {},
+  "metadata": {
+    "apiVersion": "v2",
+    "requestId": "request-uuid"
+  }
+}`,
+        label: 'Validation Error Response',
+      },
+    ],
+  },
+
+  // =========================================================================
   // CHANGELOG
   // =========================================================================
   {
@@ -7454,7 +8256,7 @@ app.post('/webhooks/whats91', async (req, res) => {
       },
       {
         type: 'paragraph',
-        text: 'Release notes for Whats91 versions 1.0.2, 1.0.1, and 1.0.0, including platform, partner, API, reporting, billing, automation, and developer tooling updates.',
+        text: 'Release notes for Whats91 versions 1.2.0, 1.0.2, 1.0.1, and 1.0.0, including dashboard routing, Flow Builder automation, campaign reliability, reporting, billing, AI tools, platform, partner, API, and developer tooling updates.',
       },
       {
         type: 'divider',
@@ -7468,6 +8270,462 @@ app.post('/webhooks/whats91', async (req, res) => {
 // ---------------------------------------------------------------------------
 
 export const changelogEntries: ChangelogEntry[] = [
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Changed: Dashboard, Flow Builder, campaigns, reports, and developer workflows',
+    type: 'improvement',
+    description:
+      'Improved dashboard return paths, Flow Builder automation, campaign reliability, report filtering, and developer-facing configuration workflows.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Fixed: Dashboard return path after login',
+    type: 'fix',
+    description:
+      'Preserved the originally requested dashboard page during unauthenticated redirects so users return to pages like API Tokens after login instead of always landing on the dashboard.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Fixed: AI Brain fallback marker display',
+    type: 'fix',
+    description:
+      'AI Brain playground fallback answers now show the fallback badge without repeating the raw `[FALLBACK]` marker in the chat bubble.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Fixed: Flow Usage session report loading',
+    type: 'fix',
+    description:
+      'Flow Usage session reports no longer fail with incorrect MySQL prepared-statement arguments when loading journey sessions.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Fixed: Campaign opt-out keyword handling',
+    type: 'fix',
+    description:
+      'Campaign opt-out keyword handling now records `UNSUBSCRIBE` reliably, avoids the webhook-side `userId is not defined` crash, adds standalone opt-outs to the sender-scoped blacklist, and keeps opt-out/resubscribe handling ahead of flows, chatbots, and AI bots.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Fixed: Campaign unsubscribe confirmations',
+    type: 'fix',
+    description:
+      'Campaign unsubscribe confirmation messages now send consistently after `UNSUBSCRIBE` by allowing the opt-out system reply to bypass only the newly-created sender blacklist row.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Fixed: Customer sidebar upcoming tag alignment',
+    type: 'fix',
+    description:
+      'Customer sidebar upcoming tags now sit at the row edge without changing the original icon-to-label alignment for main menus.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Fixed: Campaign throttle requeue behavior',
+    type: 'fix',
+    description:
+      'Campaign throttle setting changes now requeue campaigns waiting on `CAMPAIGN_THROTTLE_WINDOW_CLOSED` so they are rechecked against the updated sending window immediately.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Fixed: Campaign worker skipped-state reporting',
+    type: 'fix',
+    description:
+      'Campaign workers now record retry-expired, subscription-blocked, and billing-blocked jobs as internal not-sent/skipped states when Meta was never called, preventing false `message_failed` rows and false campaign failure rates.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Fixed: All Messages origin classification',
+    type: 'fix',
+    description:
+      'All Messages now classifies message-event origin and hides uncorrelated coexisting/mobile-app webhook activity, while retaining report rows for Whats91-sent messages and matching Meta status/reply updates.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Fixed: All Messages outbound filtering',
+    type: 'fix',
+    description:
+      'All Messages outbound filtering now keeps report-visible Meta status rows even when older/imported sends do not have a same-table outbound event, restoring valid API and campaign messages while still hiding coexisting/unmatched rows through `report_visible`.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Fixed: Partner customer management actions',
+    type: 'fix',
+    description:
+      'Partner Customer management now gives normal partners the same assigned-customer actions as Tech Partners, including edit, cache clear, impersonation, and customer creation.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Fixed: Contact import phonebook return state',
+    type: 'fix',
+    description:
+      'Contact import now preserves the selected phonebook when returning from regular or grid imports, adds a completed grid-import back button, and keeps the Contacts menu responsive by syncing phonebook selection with the `groupUid` URL.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Fixed: Campaign retry-expiry throttle deferrals',
+    type: 'fix',
+    description:
+      'Campaign throttle deferrals are now capped at the job retry-expiry boundary and throttle-setting changes also requeue old zero-attempt `RETRY_EXPIRED` rows that were created before Meta dispatch.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Fixed: Campaign log cleanup scheduler',
+    type: 'fix',
+    description:
+      'Campaign log cleanup now runs through the backend Node-cron scheduler after migrations, using `CAMPAIGN_LOG_CLEANUP_CRON` and `CAMPAIGN_LOG_CLEANUP_TIMEZONE` instead of requiring a separate system cron entry.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Fixed: Campaign Builder draft confirmation actions',
+    type: 'fix',
+    description:
+      'Campaign Builder draft confirmation actions now stay aligned in one row, with the discard action styled as a destructive red button.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Fixed: Report summary metrics under stat filters',
+    type: 'fix',
+    description:
+      'All Messages and Campaign Reports keep their summary metric counts intact when a status stat filter is applied, so filtered rows change without zeroing the overall stat cards.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Fixed: Stale report API responses',
+    type: 'fix',
+    description:
+      'Report data loaders now guard against stale API responses overwriting newer filter results.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Fixed: Message Billing stale filter responses',
+    type: 'fix',
+    description:
+      'Message Billing now uses the branded report loader and ignores stale billing responses when filters change.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Fixed: Template copy media preservation',
+    type: 'fix',
+    description:
+      'Template copy now preserves existing JPG, PDF, video, and document header media by preselecting reusable source media in the new template form and resolving source-template media on submit when the upload cache has expired.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Fixed: WhatsApp Cloud API Fresh Register flow',
+    type: 'fix',
+    description:
+      'WhatsApp Cloud API setup now offers Fresh Register instead of Replace, deleting and recreating the selected setup row from Meta while keeping the same setup reference for sender-scoped configuration.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Added: Customer AI Profiles',
+    type: 'feature',
+    description:
+      'Customer AI Profiles under the AI menu for encrypted provider credentials, model defaults, full-page editing, and saved-profile testing.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Added: Customer AI Brains',
+    type: 'feature',
+    description:
+      'Customer AI Brains under the AI menu with linked AI Profiles, text contracts, copied markdown instructions, playground testing, fallback detection, and basic analytics.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Added: Flow journey tracking',
+    type: 'feature',
+    description:
+      'Flow journey tracking now records flow sessions, stages, transitions, messages, user inputs, timeouts, abandonment, and completion status in the flow database, with a new customer Flow Usage report under Automation.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Added: Flow Usage cleanup cron',
+    type: 'feature',
+    description:
+      'Main backend Flow Usage cleanup cron now removes flow journey report data older than 15 days from the flow database.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Added: Internal template dispatch and Talk to Agent node',
+    type: 'feature',
+    description:
+      'Reusable internal template dispatch API for Whats91 systems and a new Flow Builder Talk to Agent node can notify agents through approved WhatsApp templates.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Added: Branded GlobalLoader',
+    type: 'feature',
+    description:
+      'Reusable branded `GlobalLoader` component using the Whats91 logo, first applied to All Messages and Campaign Reports while report data is loading.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Added: Campaign Builder template-aware opt-out defaults',
+    type: 'feature',
+    description:
+      'Campaign Builder templates with `Unsubscribe`, `Opt-Out`, `Stop`, or `Not Interested` quick replies now auto-enable opt-out, select the initial message button, and fill the report label while still allowing edits.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Added: Campaign Builder save-draft support',
+    type: 'feature',
+    description:
+      'Campaign Builder save-draft support adds a header Save Draft action and a leave prompt that can save, discard, or continue editing.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Added: Public API v1 sendtemplate PDF image conversion',
+    type: 'feature',
+    description:
+      'Public API v1 `sendtemplate` now supports optional `sendAsImage` / `send_as_image` PDF invoice conversion for approved image-header templates.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Added: Administrator Customer report filters and export columns',
+    type: 'feature',
+    description:
+      'Administrator Customer report now supports Billing managed by and Chat access filters, conditional Yes/No coloring, and Excel export with Meta registered phone, `phone_number_id`, and `waba_id`.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Added: Customer template footer field',
+    type: 'feature',
+    description:
+      "Customer template creation now exposes Meta's optional footer text field for non-authentication templates and submits it through the existing footer component payload.",
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Added: Template category badges and campaign retry defaults',
+    type: 'feature',
+    description:
+      'Campaign Builder now shows colored Marketing, Utility, and Authentication badges in template selection dropdowns, final review summaries, and directly above the launch button, and new campaigns default retry expiry to two days after creation.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Added: Meta template webhook status sync',
+    type: 'feature',
+    description:
+      'Meta template approval, rejection, and category webhooks now sync local template status/category data and can notify customers through configured WhatsApp templates.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Added: Template webhook customer notifications',
+    type: 'feature',
+    description:
+      'Template webhook customer notifications now use the generic company notification sender configured by `NOTIFICATION_SENDER_ID`, avoiding customer-specific sender fallbacks.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Added: Internal template notification context',
+    type: 'feature',
+    description:
+      'Internal template dispatch now supports `notification_context` so template notifications use the company notification sender while Flow Builder notifications keep the customer sender.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Added: Template webhook lookup indexes',
+    type: 'feature',
+    description:
+      'Template webhook lookup indexes now use MySQL-safe prefix lengths so startup migrations do not fail on long template name columns.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Added: Customer account profile updates',
+    type: 'feature',
+    description:
+      'Customer dashboard headers now let signed-in customers open an account profile form from their name/email and update only their email ID, password, or WhatsApp mobile number; password changes require confirmation and mobile changes require country-code selection plus WhatsApp OTP verification.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Changed: Flow Builder inbound trigger defaults',
+    type: 'improvement',
+    description:
+      'New Flow Builder inbound-message trigger nodes now default to Exact match instead of Any keyword.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Changed: Flow Builder media previews',
+    type: 'improvement',
+    description:
+      'Flow Builder message nodes now show attached image media as inline thumbnails and PDF, Excel, Word, or fallback document media as clear file-type chips.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Changed: Flow Builder node header spacing',
+    type: 'improvement',
+    description:
+      'Flow Builder node headers are now slimmer with balanced vertical padding and no default title/subtitle paragraph spacing.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Changed: Flow Builder mixed-media message nodes',
+    type: 'improvement',
+    description:
+      'Flow Builder message nodes now support up to 10 mixed media attachments with per-item captions and media-first webhook delivery.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Changed: Flow Builder timeout and action paths',
+    type: 'improvement',
+    description:
+      'Flow Builder timeout and action paths can now route to Talk to Agent, with mandatory template-based agent alerts and optional customer text notifications.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Changed: AI Brain markdown instruction copy actions',
+    type: 'improvement',
+    description:
+      'AI Brain Markdown instructions now provide separate website and document copy buttons with source-specific Brain Contract extraction prompts and no embedded Brain-specific values.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Changed: Campaign Builder throttle defaults',
+    type: 'improvement',
+    description:
+      'Campaign Builder throttle defaults now use a wider `05:00` to `23:00` sending window for new/default settings.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Changed: Campaign opt-out defaults',
+    type: 'improvement',
+    description:
+      'Campaign opt-out defaults now include `NOT INTERESTED` for opt-out and `INTERESTED` for re-subscribe keyword handling.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Changed: Developer REST API dashboard documentation',
+    type: 'improvement',
+    description:
+      'Developer REST API dashboard documentation now shows a moved-docs notice and opens the maintained external developer site in a new tab.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Changed: Flow Usage, Chat Shortcuts, and Customer Add-ons page density',
+    type: 'improvement',
+    description:
+      'Flow Usage, Chat Shortcuts, and Customer Add-ons pages were tightened by removing redundant hero/header panels, moving key actions into the dashboard header, reducing excess padding, and making pagination/action visibility more contextual.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Changed: All Messages stat card quick filters',
+    type: 'improvement',
+    description:
+      'All Messages report stat cards are now clickable quick filters for statuses such as total, read, pending, duplicate, and failed; the filter resets naturally on a page reload.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Changed: Campaign Reports stat quick filters',
+    type: 'improvement',
+    description:
+      'Campaign Reports now match the All Messages quick-filter behavior on campaign list and campaign detail stats, with report-area loading overlays while filters refresh.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Changed: Campaign Reports mobile filters',
+    type: 'improvement',
+    description:
+      'Campaign Reports now use the compact All Messages-style two-column mobile layout for list and detail filters while preserving desktop report layouts.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Changed: Message Billing runtime indexes',
+    type: 'improvement',
+    description:
+      'Message Billing runtime indexes now cover common customer billing report filters on the separate billing database.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Changed: Message Billing aggregate sender view',
+    type: 'improvement',
+    description:
+      'Message Billing now defaults to an explicit all-linked-numbers aggregate view, with a sender filter for viewing billing rows and summaries for one registered Meta number while shared wallet balances remain account-wide.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Changed: Administrator Wallet Management customer search',
+    type: 'improvement',
+    description:
+      'Administrator Wallet Management now uses the same customer search styling and debounced customer lookup as the Subscription form when adding wallet transactions.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Changed: Administrator Customer WABA search',
+    type: 'improvement',
+    description:
+      'Administrator Customer search now matches Cloud API WABA IDs through `cloud_api_setup.whatsapp_business_account_id`, backed by a new runtime index for faster WABA lookup.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Changed: Customer sidebar upcoming section',
+    type: 'improvement',
+    description:
+      'Customer sidebar now moves AI, Orders, Catalog Management, and WA Group into the bottom upcoming section with visible `Upcoming` tags.',
+  },
+  {
+    date: '2026-06-11',
+    version: '1.2.0',
+    title: 'Changed: Talk to Agent phone and parameter handling',
+    type: 'improvement',
+    description:
+      'Talk to Agent node setup now accepts country-code phone numbers without requiring a leading plus sign and uses clear parameter dropdown labels such as incoming phone number, last incoming message text, flow name, and session references.',
+  },
   {
     date: '2026-06-06',
     version: '1.0.2',
@@ -8247,6 +9505,7 @@ function defaultRelatedSectionIds(section: DocSectionData): string[] {
     'contact-book': ['messaging-template-send', 'blacklist-list', 'reports-mobile-history'],
     blacklist: ['messaging-chat-text', 'contact-book-list', 'reports-message-status'],
     conversations: ['reports-all', 'webhook-samples', 'messaging-chat-text'],
+    crm: ['contact-book-create', 'webhook-examples', 'conversations-list'],
   }
 
   return [...sameCategoryIds, ...(topicClusters[section.category] ?? [])]

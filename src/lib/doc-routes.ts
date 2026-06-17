@@ -23,6 +23,7 @@ const routedCategories: Record<string, RoutedCategoryConfig> = {
   'contact-book': { canonicalPath: '/contact-books', legacyPaths: ['/contact-book'] },
   blacklist: { canonicalPath: '/blacklist' },
   conversations: { canonicalPath: '/conversations' },
+  crm: { canonicalPath: '/crm' },
   changelog: { canonicalPath: '/changelog', singlePage: true },
 }
 

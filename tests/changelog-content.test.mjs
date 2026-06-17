@@ -13,12 +13,12 @@ const docData = read("src/lib/doc-data.ts");
 const changelogPage = read("src/app/changelog/page.tsx");
 const changelogComponent = read("src/components/docs/changelog-page.tsx");
 
-test("changelog entries use the supplied 1.0.x release versions and dates", () => {
-  ["1.0.2", "1.0.1", "1.0.0"].forEach((version) => {
+test("changelog entries use the supplied release versions and dates", () => {
+  ["1.2.0", "1.0.2", "1.0.1", "1.0.0"].forEach((version) => {
     assert.match(docData, new RegExp(`version: '${version}'`));
   });
 
-  ["2026-06-06", "2026-06-05", "2026-06-03"].forEach((date) => {
+  ["2026-06-11", "2026-06-06", "2026-06-05", "2026-06-03"].forEach((date) => {
     assert.match(docData, new RegExp(`date: '${date}'`));
   });
 
@@ -26,8 +26,16 @@ test("changelog entries use the supplied 1.0.x release versions and dates", () =
   assert.doesNotMatch(docData, /2025-02-28|2024-12-01/);
 });
 
-test("changelog content includes release details extracted from the three source versions", () => {
+test("changelog content includes release details extracted from the supplied source versions", () => {
   [
+    "Improved dashboard return paths",
+    "Flow Builder automation",
+    "Campaign opt-out keyword handling",
+    "Customer AI Profiles",
+    "Customer AI Brains",
+    "Flow journey tracking",
+    "Public API v1 `sendtemplate` now supports optional `sendAsImage`",
+    "Developer REST API dashboard documentation now shows a moved-docs notice",
     "Improved webhook chat-access cache safety",
     "public API v2 webhook management endpoints",
     "public API v2 message reporting endpoints",
@@ -47,6 +55,12 @@ test("changelog content includes release details extracted from the three source
 
 test("changelog updates are split into distinct standalone entries", () => {
   [
+    "Fixed: Dashboard return path after login",
+    "Fixed: Campaign opt-out keyword handling",
+    "Added: Customer AI Profiles",
+    "Added: Flow journey tracking",
+    "Changed: Flow Builder inbound trigger defaults",
+    "Changed: Developer REST API dashboard documentation",
     "Added: Partner and Tech Partner account subtypes",
     "Added: Partner subscription activation with Whats91 Coins",
     "Added: Public API v2 webhook management endpoints",
@@ -90,8 +104,9 @@ test("changelog page groups changes under a single date and version header", () 
   assert.doesNotMatch(changelogComponent, /\{entry\.version\}/);
 });
 
-test("changelog route metadata reflects the current 1.0.x release set", () => {
-  assert.match(changelogPage, /Versions 1\.0\.2, 1\.0\.1, and 1\.0\.0/);
+test("changelog route metadata reflects the current release set", () => {
+  assert.match(changelogPage, /Versions 1\.2\.0, 1\.0\.2, 1\.0\.1, and 1\.0\.0/);
+  assert.match(changelogPage, /11 Jun 2026/);
   assert.match(changelogPage, /06 Jun 2026/);
   assert.match(changelogPage, /05 Jun 2026/);
   assert.match(changelogPage, /03 Jun 2026/);

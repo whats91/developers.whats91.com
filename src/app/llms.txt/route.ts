@@ -14,6 +14,7 @@ export function GET() {
     ['Reports APIs', '/reports'],
     ['Billing APIs', '/message-billing'],
     ['Conversations APIs', '/conversations'],
+    ['CRM APIs', '/crm'],
     ['Changelog', '/changelog'],
   ]
 
@@ -31,7 +32,7 @@ export function GET() {
 
   const body = `# Whats91 Developer Documentation
 
-Whats91 API documentation for WhatsApp messaging, template creation, webhooks, chatbots, reports, billing, contact books, blacklists, and conversations.
+Whats91 API documentation for WhatsApp messaging, template creation, webhooks, chatbots, reports, billing, contact books, blacklists, conversations, and CRM lead generation.
 
 ## Primary Documentation Areas
 

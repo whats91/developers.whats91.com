@@ -19,7 +19,7 @@ import {
 } from '@/lib/doc-data'
 import { getAdjacentDocRoutes, getPathForSectionId } from '@/lib/doc-routes'
 import { highlightCode } from '@/lib/code-highlight.mjs'
-import { getLlmCopyDocForCategory, type LlmCopyDoc } from '@/lib/llm-copy-docs'
+import { getLlmCopyDocForCategory, getLlmCopyDocForSection, type LlmCopyDoc } from '@/lib/llm-copy-docs'
 import { Copy, Check, Info, AlertTriangle, Lightbulb, AlertCircle, ChevronDown, ChevronLeft, ChevronRight, Gauge, Sparkles } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
@@ -927,7 +927,9 @@ export function ContentRenderer({ sectionId }: ContentRendererProps) {
     )
   }
 
-  const llmCopyDoc = getLlmCopyDocForCategory(section.category)
+  const llmCopyDoc =
+    getLlmCopyDocForSection(section.id) ??
+    getLlmCopyDocForCategory(section.category)
 
   return (
     <div ref={contentRef} id="doc-content" className="mx-auto w-full max-w-[960px]">

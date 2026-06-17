@@ -25,6 +25,7 @@ import {
   BookUser,
   Ban,
   MessageCircle,
+  UsersRound,
 } from 'lucide-react'
 
 // Alias to match the expected import name from the spec
@@ -45,6 +46,7 @@ const categoryIconMap: Record<string, React.ComponentType<{ className?: string }
   BookUser,
   Ban,
   MessageCircle,
+  UsersRound,
   Zap,
   Clock,
 }

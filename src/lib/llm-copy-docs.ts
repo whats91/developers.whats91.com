@@ -1,10 +1,11 @@
 export type LlmCopyDoc = {
   categoryId: string
+  sectionId?: string
   label: string
   path: string
 }
 
-const llmCopyDocs: Record<string, LlmCopyDoc> = {
+const categoryLlmCopyDocs: Record<string, LlmCopyDoc> = {
   messaging: {
     categoryId: 'messaging',
     label: 'Messaging API LLM Guide',
@@ -52,10 +53,32 @@ const llmCopyDocs: Record<string, LlmCopyDoc> = {
   },
 }
 
+const sectionLlmCopyDocs: Record<string, LlmCopyDoc> = {
+  'crm-lead-generation': {
+    categoryId: 'crm',
+    sectionId: 'crm-lead-generation',
+    label: 'CRM Lead Generation API LLM Guide',
+    path: '/llms/crm-lead-generation.md',
+  },
+  'crm-complaint-creation': {
+    categoryId: 'crm',
+    sectionId: 'crm-complaint-creation',
+    label: 'CRM Complaint Creation API LLM Guide',
+    path: '/llms/crm-complaint-creation.md',
+  },
+}
+
+export function getLlmCopyDocForSection(sectionId: string): LlmCopyDoc | null {
+  return sectionLlmCopyDocs[sectionId] ?? null
+}
+
 export function getLlmCopyDocForCategory(categoryId: string): LlmCopyDoc | null {
-  return llmCopyDocs[categoryId] ?? null
+  return categoryLlmCopyDocs[categoryId] ?? null
 }
 
 export function getLlmCopyDocs(): LlmCopyDoc[] {
-  return Object.values(llmCopyDocs)
+  return [
+    ...Object.values(categoryLlmCopyDocs),
+    ...Object.values(sectionLlmCopyDocs),
+  ]
 }

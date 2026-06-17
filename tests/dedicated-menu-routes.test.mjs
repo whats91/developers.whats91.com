@@ -43,6 +43,7 @@ const routedMenus = [
   ["contact-book", "contact-books"],
   ["blacklist", "blacklist"],
   ["conversations", "conversations"],
+  ["crm", "crm"],
 ];
 
 test("every non-getting-started menu is route backed instead of homepage-only", () => {

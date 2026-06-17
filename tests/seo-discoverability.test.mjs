@@ -34,6 +34,7 @@ test("canonical documentation routes and legacy redirects are declared from one 
     "/webhooks",
     "/chatbots",
     "/contact-books",
+    "/crm",
     "/messaging/meta-compatibility",
     "/template",
     "/webhook",
@@ -172,6 +173,7 @@ test("technical SEO and AI crawlability routes exist", () => {
     "/reports",
     "/message-billing",
     "/conversations",
+    "/crm",
     "/changelog",
   ]);
 
