@@ -104,6 +104,8 @@ DEPLOY_REPO_URL=https://github.com/whats91/developers.whats91.com.git
 DEPLOY_BRANCH=main
 DEPLOY_PM2_APP_NAME=developers-whats91-com
 DEPLOY_WEBHOOK_TOKEN=replace-with-a-long-random-string
+GITHUB_WEBHOOK_SECRET=replace-with-github-webhook-secret
+DEPLOY_WEBHOOK_MAX_BODY_BYTES=1048576
 ```
 
 Manual server-side deployment command:
@@ -115,11 +117,12 @@ npm run deploy:run
 GitHub webhook settings:
 
 - Payload URL: `https://developers.whats91.com/api/webhooks/deploy?token=YOUR_TOKEN`
+- Secret: use the same value as `GITHUB_WEBHOOK_SECRET`
 - Content type: `application/json`
 - Event: push only
 - Branch: `main`
 
-If `DEPLOY_WEBHOOK_TOKEN` is empty, the webhook remains open and does not require a token. The repository is public, so no GitHub token is needed for deployment fetches. Deployment logs are written to `logs/deploy-webhook.log`.
+The deploy webhook fails closed in production when `DEPLOY_WEBHOOK_TOKEN` or `GITHUB_WEBHOOK_SECRET` is missing. The repository is public, so no GitHub token is needed for deployment fetches. Deployment logs are written to `logs/deploy-webhook.log`.
 
 ## Project Structure
 

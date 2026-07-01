@@ -74,15 +74,21 @@ test("deploy worker fetches the public main branch and performs production deplo
   );
 });
 
-test("deploy webhook route validates optional trigger auth and launches detached deployment", () => {
+test("deploy webhook route validates trigger auth and launches detached deployment", () => {
   const route = readRequiredFile("src/app/api/webhooks/deploy/route.ts");
 
   assertContainsAll(route, [
     "export const runtime = 'nodejs'",
     "export const dynamic = 'force-dynamic'",
     "DEPLOY_WEBHOOK_TOKEN",
+    "GITHUB_WEBHOOK_SECRET",
+    "X-Hub-Signature-256",
+    "createHmac",
     "x-deploy-token",
     "timingSafeEqual",
+    "Webhook payload too large.",
+    "Deploy webhook is not configured.",
+    "Invalid deploy webhook signature.",
     "process.env.PROJECT_ROOT?.trim()",
     "x-github-event",
     "ping",
@@ -97,6 +103,8 @@ test("deploy webhook route validates optional trigger auth and launches detached
     "DEPLOY_SANITIZED_PRIVATE_NEXT_ENV_REMOVED",
     "DEPLOY_TRIGGER_SOURCE",
     "deploy-webhook.log",
+    "Deployment queued.",
+    "requestId",
     "NextResponse.json",
     "status: 202",
   ]);
@@ -106,6 +114,9 @@ test("deploy webhook route validates optional trigger auth and launches detached
     /return\s*\{\s*\.\.\.process\.env[\s\S]*DEPLOY_TRIGGER_SOURCE/,
     "webhook deploy env must not inherit the full live Next.js runtime environment",
   );
+  assert.doesNotMatch(route, /if\s*\(!configuredToken\)\s*return true/);
+  assert.doesNotMatch(route, /logPath:\s*result\.logPath/);
+  assert.doesNotMatch(route, /pid:\s*result\.pid/);
 });
 
 test("deploy webhook route parses GitHub json and form encoded payloads", () => {
@@ -136,12 +147,13 @@ test("deploy webhook route exposes a safe browser health check", () => {
 
   assertContainsAll(route, [
     "export async function GET",
-    "Deploy webhook is ready.",
+    "Deploy webhook endpoint is available.",
     "GitHub must call this endpoint with POST.",
-    "tokenConfigured",
     "method: 'POST'",
-    "events: ['ping', 'push']",
   ]);
+
+  assert.doesNotMatch(route, /tokenConfigured/);
+  assert.doesNotMatch(route, /branch: process\.env\.DEPLOY_BRANCH/);
 });
 
 test("deployment config and docs expose webhook setup", () => {
@@ -157,7 +169,9 @@ test("deployment config and docs expose webhook setup", () => {
     "DEPLOY_REPO_URL=https://github.com/whats91/developers.whats91.com.git",
     "DEPLOY_BRANCH=main",
     "DEPLOY_PM2_APP_NAME=developers-whats91-com",
-    "DEPLOY_WEBHOOK_TOKEN=",
+    "DEPLOY_WEBHOOK_TOKEN=replace-with-a-long-random-string",
+    "GITHUB_WEBHOOK_SECRET=replace-with-github-webhook-secret",
+    "DEPLOY_WEBHOOK_MAX_BODY_BYTES=1048576",
   ]);
 
   assertContainsAll(gitignore, [
@@ -168,9 +182,12 @@ test("deployment config and docs expose webhook setup", () => {
 
   assertContainsAll(readme, [
     "https://developers.whats91.com/api/webhooks/deploy?token=YOUR_TOKEN",
+    "Secret: use the same value as `GITHUB_WEBHOOK_SECRET`",
     "Content type: `application/json`",
     "Event: push only",
     "Branch: `main`",
     "npm run deploy:run",
+    "The deploy webhook fails closed in production",
   ]);
+  assert.doesNotMatch(readme, /webhook remains open/i);
 });

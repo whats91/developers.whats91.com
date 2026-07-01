@@ -1,5 +1,5 @@
 import { spawn, type SpawnOptions } from 'node:child_process'
-import { timingSafeEqual } from 'node:crypto'
+import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const runtime = 'nodejs'
@@ -32,6 +32,22 @@ const privateNextEnvPrefixes = [
   'TURBO_',
 ]
 
+const defaultMaxWebhookBodyBytes = 1024 * 1024
+const githubSignatureHeader = 'X-Hub-Signature-256'
+
+class WebhookPayloadTooLargeError extends Error {}
+
+function isProduction() {
+  return process.env.NODE_ENV === 'production'
+}
+
+function getMaxWebhookBodyBytes() {
+  const configured = Number(process.env.DEPLOY_WEBHOOK_MAX_BODY_BYTES)
+  return Number.isFinite(configured) && configured > 0
+    ? configured
+    : defaultMaxWebhookBodyBytes
+}
+
 function safeCompare(expected: string, provided: string) {
   const expectedBuffer = Buffer.from(expected)
   const providedBuffer = Buffer.from(provided)
@@ -40,9 +56,9 @@ function safeCompare(expected: string, provided: string) {
   return timingSafeEqual(expectedBuffer, providedBuffer)
 }
 
-function isAuthorized(request: NextRequest) {
+function isDeployTokenAuthorized(request: NextRequest) {
   const configuredToken = process.env.DEPLOY_WEBHOOK_TOKEN?.trim()
-  if (!configuredToken) return true
+  if (!configuredToken) return !isProduction()
 
   const providedToken =
     request.nextUrl.searchParams.get('token')?.trim() ||
@@ -50,6 +66,30 @@ function isAuthorized(request: NextRequest) {
     ''
 
   return safeCompare(configuredToken, providedToken)
+}
+
+function isGithubSignatureAuthorized(request: NextRequest, rawBody: string) {
+  const configuredSecret = process.env.GITHUB_WEBHOOK_SECRET?.trim()
+  if (!configuredSecret) return !isProduction()
+
+  const providedSignature = request.headers.get(githubSignatureHeader)?.trim() || ''
+  if (!providedSignature.startsWith('sha256=')) return false
+
+  const expectedSignature =
+    'sha256=' + createHmac('sha256', configuredSecret).update(rawBody).digest('hex')
+
+  return safeCompare(expectedSignature, providedSignature)
+}
+
+function jsonError(message: string, status: number, requestId = randomUUID()) {
+  return NextResponse.json(
+    {
+      success: false,
+      error: message,
+      requestId,
+    },
+    { status }
+  )
 }
 
 function resolveProjectRoot() {
@@ -79,16 +119,29 @@ function normalizePayload(value: unknown): DeployPayload {
   return {}
 }
 
-async function readPayload(request: NextRequest): Promise<DeployPayload> {
-  const contentType = request.headers.get('content-type') || ''
+async function readRawBody(request: NextRequest): Promise<string> {
+  const maxBodyBytes = getMaxWebhookBodyBytes()
+  const contentLength = Number(request.headers.get('content-length') || '0')
+
+  if (contentLength > maxBodyBytes) {
+    throw new WebhookPayloadTooLargeError('Webhook payload too large.')
+  }
+
+  const body = await request.text()
+  if (Buffer.byteLength(body, 'utf8') > maxBodyBytes) {
+    throw new WebhookPayloadTooLargeError('Webhook payload too large.')
+  }
+
+  return body
+}
+
+function readPayload(contentType: string, body: string): DeployPayload {
+  if (!body.trim()) return {}
 
   try {
     if (contentType.includes('application/json')) {
-      return normalizePayload(await request.json())
+      return normalizePayload(JSON.parse(body))
     }
-
-    const body = await request.text()
-    if (!body.trim()) return {}
 
     if (contentType.includes('application/x-www-form-urlencoded')) {
       const payloadParam = new URLSearchParams(body).get('payload')
@@ -138,7 +191,6 @@ function startDetachedDeployment(projectRoot: string, sourceLabel: string) {
 
   return {
     logPath,
-    pid: child.pid,
   }
 }
 
@@ -179,35 +231,50 @@ function sanitizeDeployEnv(projectRoot: string, sourceLabel: string) {
 }
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorized(request)) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Unauthorized deploy webhook request.',
-      },
-      { status: 401 }
-    )
+  if (!process.env.DEPLOY_WEBHOOK_TOKEN?.trim() && isProduction()) {
+    return jsonError('Deploy webhook is not configured.', 503)
+  }
+
+  if (!isDeployTokenAuthorized(request)) {
+    return jsonError('Unauthorized deploy webhook request.', 401)
   }
 
   return NextResponse.json({
     success: true,
-    message: 'Deploy webhook is ready. GitHub must call this endpoint with POST.',
+    message: 'Deploy webhook endpoint is available. GitHub must call this endpoint with POST.',
     method: 'POST',
-    events: ['ping', 'push'],
-    branch: process.env.DEPLOY_BRANCH || 'main',
-    tokenConfigured: Boolean(process.env.DEPLOY_WEBHOOK_TOKEN?.trim()),
   })
 }
 
 export async function POST(request: NextRequest) {
-  if (!isAuthorized(request)) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Unauthorized deploy webhook request.',
-      },
-      { status: 401 }
-    )
+  const requestId = randomUUID()
+
+  if (!process.env.DEPLOY_WEBHOOK_TOKEN?.trim() && isProduction()) {
+    return jsonError('Deploy webhook is not configured.', 503, requestId)
+  }
+
+  if (!isDeployTokenAuthorized(request)) {
+    return jsonError('Unauthorized deploy webhook request.', 401, requestId)
+  }
+
+  let rawBody = ''
+  try {
+    rawBody = await readRawBody(request)
+  } catch (error) {
+    if (error instanceof WebhookPayloadTooLargeError) {
+      return jsonError('Webhook payload too large.', 413, requestId)
+    }
+
+    console.error('[deploy-webhook] Unable to read webhook body', { requestId, error })
+    return jsonError('Invalid deploy webhook request.', 400, requestId)
+  }
+
+  if (!process.env.GITHUB_WEBHOOK_SECRET?.trim() && isProduction()) {
+    return jsonError('Deploy webhook signature secret is not configured.', 503, requestId)
+  }
+
+  if (!isGithubSignatureAuthorized(request, rawBody)) {
+    return jsonError('Invalid deploy webhook signature.', 401, requestId)
   }
 
   const event = request.headers.get('x-github-event') || ''
@@ -218,7 +285,8 @@ export async function POST(request: NextRequest) {
     })
   }
 
-  const payload = await readPayload(request)
+  const contentType = request.headers.get('content-type') || ''
+  const payload = readPayload(contentType, rawBody)
   const expectedRef = `refs/heads/${process.env.DEPLOY_BRANCH || 'main'}`
   if (event === 'push' && !payload.ref) {
     return NextResponse.json(
@@ -249,7 +317,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const projectRoot = resolveProjectRoot()
-    const result = startDetachedDeployment(
+    startDetachedDeployment(
       projectRoot,
       request.headers.get('x-forwarded-for') || 'webhook'
     )
@@ -258,19 +326,13 @@ export async function POST(request: NextRequest) {
       {
         success: true,
         queued: true,
-        message: 'Deployment started.',
-        logPath: result.logPath,
-        pid: result.pid,
+        message: 'Deployment queued.',
+        requestId,
       },
       { status: 202 }
     )
   } catch (error) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to start deployment.',
-      },
-      { status: 500 }
-    )
+    console.error('[deploy-webhook] Failed to start deployment', { requestId, error })
+    return jsonError('Failed to start deployment.', 500, requestId)
   }
 }
