@@ -71,7 +71,11 @@ export function resolveRoutedDoc(categorySlug: string, sectionSlug?: string) {
     section,
     routeSection,
     path: sectionSlug ? getSectionPath(category, routeSection) : routeConfig.canonicalPath,
-    canonicalPath: sectionSlug ? getSectionPath(category, routeSection) : routeConfig.canonicalPath,
+    // The canonical URL is always the section's own path. For category base
+    // routes that render their first section's content (for example /templates
+    // rendering Marketing), this points the canonical at the section URL so the
+    // two copies never compete in search.
+    canonicalPath: getSectionPath(category, routeSection),
     categoryPath: routeConfig.canonicalPath,
   } satisfies ResolvedDocRoute
 }
@@ -169,8 +173,11 @@ export function getIndexableDocRoutes() {
     const routeConfig = routedCategories[category.slug]
     if (!routeConfig) continue
 
+    // Key by canonical path so a category base route that duplicates its first
+    // section (for example /templates and /templates/marketing) yields one
+    // sitemap entry instead of two competing URLs.
     const firstRoute = resolveRoutedDoc(category.slug)
-    if (firstRoute) routes.set(routeConfig.canonicalPath, firstRoute)
+    if (firstRoute) routes.set(firstRoute.canonicalPath, firstRoute)
 
     if (routeConfig.singlePage) continue
 

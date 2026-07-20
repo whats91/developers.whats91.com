@@ -41,9 +41,9 @@ const footerColumns = [
 
 export function Footer() {
   return (
-    <footer className="border-t border-[#e5e5e5] bg-white mt-auto">
-      <div className="max-w-[1440px] mx-auto px-6 py-12 lg:py-16">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 lg:gap-12">
+    <footer className="mt-auto border-t border-hairline bg-panel">
+      <div className="mx-auto max-w-[1200px] px-5 py-12 sm:px-8 lg:px-12 lg:py-16">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-10 md:grid-cols-5 lg:gap-x-12">
           {/* Brand column */}
           <div className="col-span-2 md:col-span-1">
             <a
@@ -59,26 +59,23 @@ export function Footer() {
                 className="h-7 w-auto"
               />
             </a>
-            <p className="text-sm text-[#5a5a5c] leading-relaxed max-w-[220px]">
+            <p className="max-w-[220px] text-[13.5px] leading-relaxed text-mist">
               WhatsApp Business API platform for modern messaging at scale.
-            </p>
-            <p className="mt-4 text-xs text-[#888888]">
-              &copy; {new Date().getFullYear()} Whats91
             </p>
           </div>
 
           {/* Link columns */}
           {footerColumns.map((col) => (
             <div key={col.title}>
-              <h4 className="text-sm font-semibold text-[#0a0a0a] mb-3">
+              <h4 className="mb-3.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
                 {col.title}
               </h4>
-              <ul className="space-y-2">
+              <ul className="space-y-2.5">
                 {col.links.map((link) => (
                   <li key={link.label}>
                     <a
                       href={link.href}
-                      className="text-sm text-[#5a5a5c] hover:text-[#0a0a0a] transition-colors"
+                      className="text-[13.5px] text-mist transition-colors hover:text-ink"
                     >
                       {link.label}
                     </a>
@@ -87,6 +84,19 @@ export function Footer() {
               </ul>
             </div>
           ))}
+        </div>
+
+        <div className="mt-12 flex flex-col gap-3 border-t border-hairline-soft pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-faint">
+            &copy; {new Date().getFullYear()} Whats91. All rights reserved.
+          </p>
+          <p className="flex items-center gap-1.5 text-xs text-faint">
+            <span
+              className="inline-block h-1.5 w-1.5 rounded-full bg-brand"
+              aria-hidden="true"
+            />
+            All systems operational
+          </p>
         </div>
       </div>
     </footer>

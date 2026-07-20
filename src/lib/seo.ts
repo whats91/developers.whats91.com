@@ -16,6 +16,10 @@ export const SITE_URL = 'https://developers.whats91.com'
 export const DOCS_SITE_NAME = 'Whats91 Developers'
 const OPEN_GRAPH_IMAGE_PATH = '/opengraph-image'
 const TWITTER_IMAGE_PATH = '/twitter-image'
+// Raster fallback for platforms that do not render SVG Open Graph images
+// (Facebook, X, LinkedIn, WhatsApp). Listed after the branded SVG so SVG-capable
+// consumers keep the richer image.
+const OPEN_GRAPH_FALLBACK_IMAGE_PATH = '/icons/icon-512.png'
 
 export function absoluteUrl(path: string): string {
   if (path.startsWith('http://') || path.startsWith('https://')) return path
@@ -61,13 +65,19 @@ export function buildDocMetadata(route: ResolvedDocRoute | null): Metadata {
           height: 630,
           alt: 'Whats91 developer documentation',
         },
+        {
+          url: absoluteUrl(OPEN_GRAPH_FALLBACK_IMAGE_PATH),
+          width: 512,
+          height: 512,
+          alt: 'Whats91 logo',
+        },
       ],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: [twitterImage],
+      images: [twitterImage, absoluteUrl(OPEN_GRAPH_FALLBACK_IMAGE_PATH)],
     },
   }
 }
@@ -111,11 +121,8 @@ export function buildGlobalSchemas() {
       name: DOCS_SITE_NAME,
       url: SITE_URL,
       publisher: { '@id': `${SITE_URL}/#organization` },
-      potentialAction: {
-        '@type': 'SearchAction',
-        target: `${SITE_URL}/search?query={search_term_string}`,
-        'query-input': 'required name=search_term_string',
-      },
+      // No SearchAction: documentation search is an in-page dialog and the site
+      // has no /search results URL, so advertising one would be an invalid claim.
     },
     {
       '@context': 'https://schema.org',

@@ -23,30 +23,30 @@ const filters: { key: FilterType; label: string }[] = [
 
 const typeConfig: Record<
   string,
-  { label: string; color: string; bgClass: string; icon: React.ElementType }
+  { label: string; dotVar: string; badgeClass: string; icon: React.ElementType }
 > = {
   feature: {
     label: 'Feature',
-    color: '#00d4a4',
-    bgClass: 'bg-[#00d4a4]/10 text-[#00d4a4]',
+    dotVar: 'var(--brand)',
+    badgeClass: 'bg-brand/10 text-brand-strong',
     icon: Sparkles,
   },
   improvement: {
     label: 'Improvement',
-    color: '#3772cf',
-    bgClass: 'bg-[#3772cf]/10 text-[#3772cf]',
+    dotVar: 'var(--info)',
+    badgeClass: 'bg-info/10 text-info',
     icon: Wrench,
   },
   fix: {
     label: 'Fix',
-    color: '#c37d0d',
-    bgClass: 'bg-[#c37d0d]/10 text-[#c37d0d]',
+    dotVar: 'var(--warn)',
+    badgeClass: 'bg-warn/10 text-warn',
     icon: Bug,
   },
   breaking: {
     label: 'Breaking',
-    color: '#d45656',
-    bgClass: 'bg-[#d45656]/10 text-[#d45656]',
+    dotVar: 'var(--danger)',
+    badgeClass: 'bg-danger/10 text-danger',
     icon: AlertTriangle,
   },
 }
@@ -92,32 +92,30 @@ export default function ChangelogPage() {
   )
 
   return (
-    <div className="max-w-3xl">
+    <div className="mx-auto w-full max-w-[760px]">
       {/* Page Header */}
       <div className="mb-10">
-        <h1
-          className="text-[48px] font-semibold leading-tight tracking-tight text-[#0a0a0a]"
-          style={{ fontSize: 48, fontWeight: 600 }}
-        >
+        <h1 className="text-[1.9rem] font-semibold leading-[1.15] tracking-[-0.02em] text-ink sm:text-[2.25rem]">
           Changelog
         </h1>
-        <p className="mt-3 text-[16px] leading-relaxed text-[#5a5a5c]">
+        <p className="mt-3 text-[16.5px] leading-relaxed text-mist">
           Latest updates and improvements to the Whats91 platform
         </p>
       </div>
 
       {/* Filter Pills */}
-      <div className="mb-10 flex flex-wrap gap-2">
+      <div className="mb-12 flex flex-wrap gap-2">
         {filters.map((filter) => {
           const isActive = activeFilter === filter.key
           return (
             <button
               key={filter.key}
               onClick={() => setActiveFilter(filter.key)}
-              className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-medium transition-all duration-150 ${
+              aria-pressed={isActive}
+              className={`inline-flex items-center rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-all duration-150 ${
                 isActive
-                  ? 'bg-[#0a0a0a] text-white border border-[#0a0a0a]'
-                  : 'bg-white text-[#5a5a5c] border border-[#e5e5e5] hover:border-[#ccc]'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'border border-hairline bg-card text-mist hover:border-faint/50 hover:text-ink'
               }`}
             >
               {filter.label}
@@ -129,46 +127,49 @@ export default function ChangelogPage() {
       {/* Timeline */}
       <div className="relative">
         {/* Timeline line */}
-        <div className="absolute left-[7px] top-2 bottom-2 w-[2px] bg-[#e5e5e5]" />
+        <div className="absolute bottom-2 left-[7px] top-2 w-px bg-hairline" aria-hidden="true" />
 
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-12">
           {groupedEntries.map((group) => {
             const groupConfig = typeConfig[group.entries[0]?.type ?? 'feature']
 
             return (
-              <div key={`${group.version}-${group.date}`} className="relative flex gap-6">
+              <div key={`${group.version}-${group.date}`} className="relative flex gap-5 sm:gap-7">
                 {/* Timeline dot */}
-                <div className="relative z-10 mt-2 flex-shrink-0">
+                <div className="relative z-10 mt-1.5 flex-shrink-0">
                   <div
-                    className="h-[16px] w-[16px] rounded-full border-[3px] border-white"
-                    style={{ backgroundColor: groupConfig.color, boxShadow: `0 0 0 2px ${groupConfig.color}30` }}
+                    className="h-[15px] w-[15px] rounded-full border-[3px] border-background"
+                    style={{
+                      backgroundColor: groupConfig.dotVar,
+                      boxShadow: `0 0 0 1px color-mix(in srgb, ${groupConfig.dotVar} 35%, transparent)`,
+                    }}
                   />
                 </div>
 
                 {/* Entry Content */}
-                <div className="flex-1 min-w-0 pb-2">
+                <div className="min-w-0 flex-1 pb-2">
                   {/* Date & Version row */}
-                  <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 text-sm text-[#5a5a5c]">
-                      <Calendar className="h-3.5 w-3.5" />
+                  <div className="mb-4 flex flex-wrap items-center gap-2.5">
+                    <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-mist">
+                      <Calendar className="h-3.5 w-3.5 text-faint" />
                       {formatDate(group.date)}
                     </span>
-                    <span className="bg-[#f7f7f7] text-[#5a5a5c] text-xs font-mono rounded-full px-3 py-1">
+                    <span className="rounded-full border border-hairline bg-surface px-2.5 py-0.5 font-mono text-[11.5px] font-medium text-mist">
                       {group.version}
                     </span>
                   </div>
 
-                  <div className="space-y-6">
+                  <div className="space-y-7">
                     {group.entries.map((entry) => {
                       const config = typeConfig[entry.type]
                       const TypeIcon = config.icon
 
                       return (
-                        <div key={`${group.version}-${group.date}-${entry.title}`}>
+                        <article key={`${group.version}-${group.date}-${entry.title}`}>
                           {/* Type badge */}
                           <div className="mb-2">
                             <span
-                              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${config.bgClass}`}
+                              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide ${config.badgeClass}`}
                             >
                               <TypeIcon className="h-3 w-3" />
                               {config.label}
@@ -176,18 +177,15 @@ export default function ChangelogPage() {
                           </div>
 
                           {/* Title */}
-                          <h4
-                            className="mb-1.5 text-[22px] font-semibold leading-snug tracking-tight text-[#0a0a0a]"
-                            style={{ fontSize: 22, fontWeight: 600 }}
-                          >
+                          <h4 className="mb-1.5 text-[17px] font-semibold leading-snug tracking-[-0.01em] text-ink">
                             {entry.title}
                           </h4>
 
                           {/* Description */}
-                          <p className="text-[16px] leading-relaxed text-[#5a5a5c]">
+                          <p className="text-[14.5px] leading-[1.75] text-mist">
                             {entry.description}
                           </p>
-                        </div>
+                        </article>
                       )
                     })}
                   </div>
@@ -200,8 +198,8 @@ export default function ChangelogPage() {
 
       {/* Empty state */}
       {groupedEntries.length === 0 && (
-        <div className="py-16 text-center">
-          <p className="text-[#888888] text-sm">No entries found for this filter.</p>
+        <div className="rounded-xl border border-dashed border-hairline py-16 text-center">
+          <p className="text-sm text-faint">No entries found for this filter.</p>
         </div>
       )}
     </div>

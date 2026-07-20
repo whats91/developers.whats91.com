@@ -9519,17 +9519,19 @@ export function getSdkExamplesForSection(section: DocSectionData): CodeBlock[] {
   const endpoint = apiBlock.endpoint
   const url = `https://graph.whats91.com${endpoint}`
   const requestBody = extractRequestBody(apiBlock)
-  const hasBody = method !== 'GET' && method !== 'DELETE'
+  const hasBody = method !== 'GET' && method !== 'DELETE' && requestBody !== null
+
+  const jsonBody = hasBody ? JSON.stringify(requestBody, null, 2) : null
 
   return [
     {
       language: 'curl',
       label: 'cURL',
-      code: hasBody
+      code: jsonBody
         ? `curl -X ${method} "${url}" \\
   -H "Authorization: Bearer w91_live_xxx" \\
   -H "Content-Type: application/json" \\
-  -d '${requestBody}'`
+  -d '${jsonBody}'`
         : `curl -X ${method} "${url}" \\
   -H "Authorization: Bearer w91_live_xxx"`,
     },
@@ -9539,10 +9541,10 @@ export function getSdkExamplesForSection(section: DocSectionData): CodeBlock[] {
       code: `const response = await fetch("${url}", {
   method: "${method}",
   headers: {
-    "Authorization": "Bearer w91_live_xxx",
-    "Content-Type": "application/json"
-  }${hasBody ? `,
-  body: JSON.stringify(${requestBody})` : ''}
+    "Authorization": "Bearer w91_live_xxx"${jsonBody ? `,
+    "Content-Type": "application/json"` : ''}
+  }${jsonBody ? `,
+  body: JSON.stringify(${indentLines(jsonBody, 2)})` : ''}
 });
 
 const data = await response.json();
@@ -9556,10 +9558,10 @@ curl_setopt_array($ch, [
   CURLOPT_CUSTOMREQUEST => "${method}",
   CURLOPT_RETURNTRANSFER => true,
   CURLOPT_HTTPHEADER => [
-    "Authorization: Bearer w91_live_xxx",
-    "Content-Type: application/json"
+    "Authorization: Bearer w91_live_xxx"${jsonBody ? `,
+    "Content-Type: application/json"` : ''}
   ]${hasBody ? `,
-  CURLOPT_POSTFIELDS => json_encode(${requestBody})` : ''}
+  CURLOPT_POSTFIELDS => json_encode(${toPhpLiteral(requestBody, '  ')})` : ''}
 ]);
 
 $response = curl_exec($ch);
@@ -9575,10 +9577,10 @@ response = requests.request(
     "${method}",
     "${url}",
     headers={
-        "Authorization": "Bearer w91_live_xxx",
-        "Content-Type": "application/json",
+        "Authorization": "Bearer w91_live_xxx"${jsonBody ? `,
+        "Content-Type": "application/json"` : ''},
     }${hasBody ? `,
-    json=${requestBody}` : ''}
+    json=${toPythonLiteral(requestBody, '    ')}` : ''}
 )
 
 print(response.json())`,
@@ -9586,12 +9588,16 @@ print(response.json())`,
     {
       language: 'csharp',
       label: 'C#',
-      code: `using var client = new HttpClient();
+      code: `${jsonBody ? `using System.Text;
+
+` : ''}using var client = new HttpClient();
 client.DefaultRequestHeaders.Add("Authorization", "Bearer w91_live_xxx");
 
-var request = new HttpRequestMessage(HttpMethod.${methodTitle(method)}, "${url}");${hasBody ? `
+var request = new HttpRequestMessage(HttpMethod.${methodTitle(method)}, "${url}");${jsonBody ? `
 request.Content = new StringContent(
-  """${requestBody.replaceAll('"', '\\"')}""",
+  """
+${indentLines(jsonBody, 2, true)}
+  """,
   Encoding.UTF8,
   "application/json"
 );` : ''}
@@ -9602,13 +9608,82 @@ Console.WriteLine(await response.Content.ReadAsStringAsync());`,
   ]
 }
 
-function extractRequestBody(apiBlock: ContentBlock): string {
-  const jsonRequest = apiBlock.request?.find((block) => block.language === 'json') ?? apiBlock.request?.[0]
-  if (jsonRequest?.code?.trim()) return jsonRequest.code.trim()
+type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue }
 
-  return `{
-  "senderId": "919999999999"
-}`
+// Returns the request body as parsed JSON. Sources, in order: an explicit JSON
+// request block, then the JSON payload inside a documented curl -d flag. Returns
+// null when the endpoint documents no parseable JSON body, so SDK examples never
+// embed one language's source inside another's request body.
+function extractRequestBody(apiBlock: ContentBlock): JsonValue | null {
+  const jsonRequest = apiBlock.request?.find((block) => block.language === 'json')
+  const parsedJsonBlock = tryParseJson(jsonRequest?.code)
+  if (parsedJsonBlock !== undefined) return parsedJsonBlock
+
+  const curlRequest = apiBlock.request?.find(
+    (block) => block.language === 'curl' || block.language === 'bash'
+  )
+  const curlPayload = curlRequest?.code.match(/(?:--data-raw|--data|-d)\s+'([\s\S]*?)'/)?.[1]
+  const parsedCurlBody = tryParseJson(curlPayload)
+  if (parsedCurlBody !== undefined) return parsedCurlBody
+
+  return null
+}
+
+function tryParseJson(code: string | undefined): JsonValue | undefined {
+  if (!code?.trim()) return undefined
+  try {
+    return JSON.parse(code) as JsonValue
+  } catch {
+    return undefined
+  }
+}
+
+function indentLines(text: string, spaces: number, indentFirst = false): string {
+  const pad = ' '.repeat(spaces)
+  const lines = text.split('\n')
+  return lines
+    .map((line, index) => (index === 0 && !indentFirst ? line : `${pad}${line}`))
+    .join('\n')
+}
+
+function toPythonLiteral(value: JsonValue, indent: string): string {
+  if (value === null) return 'None'
+  if (value === true) return 'True'
+  if (value === false) return 'False'
+  if (typeof value === 'number') return String(value)
+  if (typeof value === 'string') return JSON.stringify(value)
+  const childIndent = `${indent}    `
+  if (Array.isArray(value)) {
+    if (value.length === 0) return '[]'
+    const items = value.map((item) => `${childIndent}${toPythonLiteral(item, childIndent)}`)
+    return `[\n${items.join(',\n')}\n${indent}]`
+  }
+  const entries = Object.entries(value)
+  if (entries.length === 0) return '{}'
+  const items = entries.map(
+    ([key, item]) => `${childIndent}${JSON.stringify(key)}: ${toPythonLiteral(item, childIndent)}`
+  )
+  return `{\n${items.join(',\n')}\n${indent}}`
+}
+
+function toPhpLiteral(value: JsonValue, indent: string): string {
+  if (value === null) return 'null'
+  if (value === true) return 'true'
+  if (value === false) return 'false'
+  if (typeof value === 'number') return String(value)
+  if (typeof value === 'string') return JSON.stringify(value)
+  const childIndent = `${indent}  `
+  if (Array.isArray(value)) {
+    if (value.length === 0) return '[]'
+    const items = value.map((item) => `${childIndent}${toPhpLiteral(item, childIndent)}`)
+    return `[\n${items.join(',\n')}\n${indent}]`
+  }
+  const entries = Object.entries(value)
+  if (entries.length === 0) return '(object) []'
+  const items = entries.map(
+    ([key, item]) => `${childIndent}${JSON.stringify(key)} => ${toPhpLiteral(item, childIndent)}`
+  )
+  return `[\n${items.join(',\n')}\n${indent}]`
 }
 
 function methodTitle(method: NonNullable<ContentBlock['method']>): string {

@@ -2,10 +2,11 @@
 
 import { useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, Menu, X, Command } from 'lucide-react'
+import { Search, Menu, X, Command, ArrowUpRight } from 'lucide-react'
 import { useDocStore } from '@/lib/doc-store'
 import { getPathForSectionId } from '@/lib/doc-routes'
 import { brandAssets } from '@/lib/brand-assets'
+import { ThemeToggle } from '@/components/docs/theme-toggle'
 
 const NAV_LINKS = [
   { label: 'Documentation', category: 'getting-started', section: 'overview' },
@@ -52,16 +53,29 @@ export function TopNavbar({ activeCategoryOverride }: TopNavbarProps) {
   }, [searchOpen, setSearchOpen])
 
   const displayedActiveCategory = activeCategoryOverride ?? activeCategory
-  const isActiveLink = (category: string) => displayedActiveCategory === category
+  const isActiveLink = (category: string) =>
+    category === 'changelog'
+      ? displayedActiveCategory === 'changelog'
+      : displayedActiveCategory !== 'changelog'
 
   return (
-    <header className="sticky top-0 z-50 w-full h-14 bg-white border-b border-[#e5e5e5]">
-      <div className="flex items-center justify-between h-full px-4 lg:px-6 max-w-[1440px] mx-auto">
-        {/* ── Left side: Logo + Developers label ── */}
-        <div className="flex items-center gap-3 shrink-0">
+    <header className="sticky top-0 z-50 h-14 w-full border-b border-hairline bg-background/85 backdrop-blur-xl supports-[backdrop-filter]:bg-background/75">
+      <div className="flex h-full items-center gap-3 px-4 lg:px-6">
+        {/* ── Mobile: menu button ── */}
+        <button
+          className="-ml-1 flex h-9 w-9 items-center justify-center rounded-lg text-mist transition-colors hover:bg-surface hover:text-ink md:hidden"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label={mobileMenuOpen ? 'Close navigation' : 'Open navigation'}
+          aria-expanded={mobileMenuOpen}
+        >
+          {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
+
+        {/* ── Left: Logo + Developers label ── */}
+        <div className="flex min-w-0 shrink-0 items-center gap-3">
           <a
             href="/overview"
-            className="flex items-center"
+            className="flex items-center gap-2.5"
             aria-label="Whats91 Developers home"
           >
             <img
@@ -69,145 +83,88 @@ export function TopNavbar({ activeCategoryOverride }: TopNavbarProps) {
               alt={brandAssets.name}
               width={104}
               height={28}
-              className="h-7 w-auto"
+              className="h-6 w-auto sm:h-7"
             />
           </a>
 
-          {/* Hairline separator */}
-          <div className="h-4 w-px bg-[#e5e5e5]" />
+          <div className="hidden h-4 w-px bg-hairline sm:block" aria-hidden="true" />
 
-          <span
-            className="text-sm font-normal text-[#5a5a5c] select-none"
-            style={{ fontFamily: 'Inter, sans-serif' }}
-          >
+          <span className="hidden select-none rounded-md bg-surface px-2 py-0.5 text-[12px] font-medium tracking-wide text-mist sm:block">
             Developers
           </span>
         </div>
 
-        {/* ── Center: Navigation links (hidden on mobile) ── */}
-        <nav className="hidden md:flex items-center gap-1">
+        {/* ── Center: primary nav (desktop) ── */}
+        <nav className="ml-4 hidden h-full items-center gap-1 md:flex" aria-label="Primary">
           {NAV_LINKS.map((link) => {
             const active = isActiveLink(link.category)
             return (
               <button
                 key={link.category}
                 onClick={() => handleNavClick(link.category, link.section)}
-                className={`
-                  relative px-3 py-4 text-sm font-medium transition-colors
-                  ${active ? 'text-[#0a0a0a]' : 'text-[#5a5a5c] hover:text-[#0a0a0a]'}
-                `}
+                aria-current={active ? 'page' : undefined}
+                className={`relative flex h-full items-center px-3 text-sm font-medium transition-colors ${
+                  active ? 'text-ink' : 'text-mist hover:text-ink'
+                }`}
               >
                 {link.label}
-                {/* Active underline indicator */}
                 {active && (
-                  <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#0a0a0a] rounded-full" />
+                  <span
+                    className="absolute inset-x-3 bottom-0 h-[2px] rounded-full bg-brand"
+                    aria-hidden="true"
+                  />
                 )}
               </button>
             )
           })}
         </nav>
 
-        {/* ── Right side: Search + Buttons (hidden on mobile) ── */}
-        <div className="hidden md:flex items-center gap-3 shrink-0">
-          {/* Search pill */}
+        {/* ── Right side ── */}
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          {/* Search pill (desktop) */}
           <button
             onClick={() => setSearchOpen(true)}
-            className="flex items-center gap-2 h-9 px-3 bg-[#f7f7f7] border border-[#e5e5e5] rounded-md text-sm text-[#5a5a5c] hover:border-[#d0d0d0] hover:bg-[#f0f0f0] transition-colors"
+            className="hidden h-9 w-56 items-center gap-2 rounded-lg border border-hairline bg-surface/60 px-3 text-sm text-mist transition-colors hover:border-faint/50 hover:bg-surface md:flex lg:w-64"
+            aria-label="Search documentation"
           >
-            <Search className="h-3.5 w-3.5" />
-            <span>Search</span>
-            <kbd className="flex items-center gap-0.5 ml-2 text-xs text-[#999] font-mono">
-              <Command className="h-3 w-3" />
+            <Search className="h-3.5 w-3.5 shrink-0" />
+            <span className="flex-1 text-left">Search docs...</span>
+            <kbd className="flex items-center gap-0.5 rounded border border-hairline bg-background px-1.5 py-0.5 font-mono text-[10px] text-faint">
+              <Command className="h-2.5 w-2.5" />
               <span>K</span>
             </kbd>
           </button>
 
+          {/* Search icon (mobile) */}
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-mist transition-colors hover:bg-surface hover:text-ink md:hidden"
+            aria-label="Search documentation"
+          >
+            <Search className="h-4.5 w-4.5" />
+          </button>
+
+          {/* Theme switch */}
+          <ThemeToggle />
+
+          <div className="mx-1 hidden h-4 w-px bg-hairline md:block" aria-hidden="true" />
+
           <a
             href="https://app.whats91.com/login"
-            className="text-sm font-medium text-[#5a5a5c] hover:text-[#0a0a0a] transition-colors px-2 py-1.5"
+            className="hidden px-2 py-1.5 text-sm font-medium text-mist transition-colors hover:text-ink md:block"
           >
             Sign In
           </a>
 
           <a
             href="https://app.whats91.com/dashboard/customer/developer/api-tokens"
-            className="bg-[#00d4a4] text-[#0a0a0a] rounded-full px-5 py-2 text-sm font-medium hover:bg-[#00bf94] transition-colors"
+            className="group hidden h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-90 md:flex"
           >
             Get API Keys
+            <ArrowUpRight className="h-3.5 w-3.5 opacity-60 transition-transform group-hover:-translate-y-px group-hover:translate-x-px" />
           </a>
         </div>
-
-        {/* ── Mobile: Hamburger menu button ── */}
-        <button
-          className="md:hidden flex items-center justify-center h-9 w-9 rounded-md hover:bg-[#f7f7f7] transition-colors"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
-        >
-          {mobileMenuOpen ? (
-            <X className="h-5 w-5 text-[#0a0a0a]" />
-          ) : (
-            <Menu className="h-5 w-5 text-[#0a0a0a]" />
-          )}
-        </button>
       </div>
-
-      {/* ── Mobile menu dropdown ── */}
-      {mobileMenuOpen && (
-        <div className="md:hidden border-b border-[#e5e5e5] bg-white animate-in slide-in-from-top-2 duration-200">
-          <div className="flex flex-col px-4 py-3 gap-1">
-            {NAV_LINKS.map((link) => {
-              const active = isActiveLink(link.category)
-              return (
-                <button
-                  key={link.category}
-                  onClick={() => handleNavClick(link.category, link.section)}
-                  className={`
-                    flex items-center px-3 py-2.5 rounded-md text-sm font-medium transition-colors text-left
-                    ${active ? 'text-[#0a0a0a] bg-[#f7f7f7]' : 'text-[#5a5a5c] hover:text-[#0a0a0a] hover:bg-[#f7f7f7]'}
-                  `}
-                >
-                  {link.label}
-                </button>
-              )
-            })}
-
-            <div className="h-px bg-[#e5e5e5] my-2" />
-
-            {/* Mobile search button */}
-            <button
-              onClick={() => {
-                setSearchOpen(true)
-                setMobileMenuOpen(false)
-              }}
-              className="flex items-center gap-2 px-3 py-2.5 rounded-md text-sm text-[#5a5a5c] hover:text-[#0a0a0a] hover:bg-[#f7f7f7] transition-colors"
-            >
-              <Search className="h-4 w-4" />
-              <span>Search</span>
-              <kbd className="ml-auto flex items-center gap-0.5 text-xs text-[#999] font-mono">
-                <Command className="h-3 w-3" />
-                <span>K</span>
-              </kbd>
-            </button>
-
-            <div className="h-px bg-[#e5e5e5] my-2" />
-
-            <div className="flex flex-col gap-2 pt-1">
-              <a
-                href="https://app.whats91.com/login"
-                className="text-sm font-medium text-[#5a5a5c] hover:text-[#0a0a0a] transition-colors px-3 py-2 text-left"
-              >
-                Sign In
-              </a>
-              <a
-                href="https://app.whats91.com/dashboard/customer/developer/api-tokens"
-                className="bg-[#00d4a4] text-[#0a0a0a] rounded-full px-5 py-2 text-center text-sm font-medium hover:bg-[#00bf94] transition-colors w-full"
-              >
-                Get API Keys
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
     </header>
   )
 }

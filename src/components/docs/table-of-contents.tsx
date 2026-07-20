@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useDocStore } from '@/lib/doc-store'
 import { tocData } from '@/lib/doc-data'
+import { AlignLeft } from 'lucide-react'
 
 interface TableOfContentsProps {
   sectionId?: string
@@ -63,14 +64,8 @@ export function TableOfContents({ sectionId }: TableOfContentsProps) {
   }, [headings])
 
   const handleClick = useCallback((id: string) => {
-    const el = document.getElementById(id)
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      // Offset for fixed header
-      setTimeout(() => {
-        window.scrollBy(0, -80)
-      }, 100)
-    }
+    // Headings carry scroll-mt offsets, so a plain smooth scroll lands correctly
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [])
 
   // Don't render if no headings
@@ -78,39 +73,40 @@ export function TableOfContents({ sectionId }: TableOfContentsProps) {
 
   return (
     <nav
-      className="hidden lg:block w-[200px] shrink-0"
+      className="hidden w-[240px] shrink-0 xl:block"
       aria-label="Table of contents"
     >
       <div
-        className="sticky top-14 border-l border-[#e5e5e5] dark:border-[#1f1f1f] p-4 overflow-y-auto doc-scroll"
-        style={{ maxHeight: 'calc(100vh - 56px)' }}
+        className="doc-scroll sticky top-14 overflow-y-auto overscroll-contain py-12 pl-2 pr-6"
+        style={{ maxHeight: 'calc(100vh - 3.5rem)' }}
       >
-        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#5a5a5c] dark:text-[#a8a8aa] mb-3">
+        <p className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
+          <AlignLeft className="h-3.5 w-3.5" aria-hidden="true" />
           On this page
         </p>
-        <ul className="space-y-1.5">
+        <ul className="space-y-0.5 border-l border-hairline pl-4">
           {headings.map((item) => {
             const isActive = activeHeading === item.id
             const paddingLeft =
               item.level === 1
                 ? 'pl-0'
                 : item.level === 2
-                  ? 'pl-3'
+                  ? 'pl-0'
                   : item.level === 3
-                    ? 'pl-6'
-                    : 'pl-9'
+                    ? 'pl-3'
+                    : 'pl-6'
 
             return (
               <li key={item.id}>
                 <button
                   onClick={() => handleClick(item.id)}
                   className={`
-                    block w-full text-left text-sm leading-snug py-0.5 transition-colors duration-150
+                    block w-full py-1 text-left text-[13px] leading-snug transition-colors duration-150
                     ${paddingLeft}
                     ${
                       isActive
-                        ? 'text-[#0a0a0a] dark:text-white font-medium toc-active-indicator'
-                        : 'text-[#5a5a5c] dark:text-[#a8a8aa] hover:text-[#0a0a0a] dark:hover:text-white'
+                        ? 'toc-active-indicator font-medium text-brand-strong'
+                        : 'text-mist hover:text-ink'
                     }
                   `}
                   aria-current={isActive ? 'true' : undefined}

@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog'
-import { Search, FileText, Hash, ArrowRight, Command } from 'lucide-react'
+import { Search, FileText, Hash, ArrowRight, Command, CornerDownLeft } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
 // Group results by category for display
@@ -193,31 +193,39 @@ function SearchDialogContent() {
   let globalIndex = -1
 
   return (
-    <div className="bg-white" onKeyDown={handleKeyDown}>
+    <div className="bg-popover" onKeyDown={handleKeyDown}>
       {/* Search Input */}
-      <div className="flex items-center border-b border-[#e5e5e5] px-4">
-        <Search className="size-4 shrink-0 text-[#888888]" />
+      <div className="flex items-center border-b border-hairline px-4">
+        <Search className="size-4 shrink-0 text-faint" />
         <input
           ref={inputRef}
           type="text"
           placeholder="Search documentation..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="flex-1 border-0 focus:ring-0 focus:outline-none h-12 text-sm placeholder:text-[#888888] bg-transparent px-3"
+          className="h-13 flex-1 border-0 bg-transparent px-3 text-[15px] text-ink placeholder:text-faint focus:outline-none focus:ring-0"
         />
+        <kbd className="hidden rounded border border-hairline bg-surface px-1.5 py-0.5 font-mono text-[10px] text-faint sm:block">
+          ESC
+        </kbd>
       </div>
 
       {/* Results List */}
-      <div className="max-h-[400px] overflow-y-auto">
+      <div className="doc-scroll max-h-[420px] overflow-y-auto overscroll-contain p-1.5">
         {debouncedQuery.trim() && results.length === 0 && (
-          <div className="py-8 text-center text-sm text-[#888888]">
-            No results found for &ldquo;{debouncedQuery}&rdquo;
+          <div className="py-10 text-center">
+            <p className="text-sm text-mist">
+              No results found for &ldquo;{debouncedQuery}&rdquo;
+            </p>
+            <p className="mt-1 text-xs text-faint">
+              Try a different keyword or browse the sidebar.
+            </p>
           </div>
         )}
 
         {grouped.map((group) => (
           <div key={group.categoryId}>
-            <div className="text-xs uppercase tracking-wide text-[#888888] px-3 py-2 font-semibold">
+            <div className="px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
               {group.categoryLabel}
             </div>
             {group.results.map((result) => {
@@ -229,29 +237,36 @@ function SearchDialogContent() {
                   key={`${result.sectionId}-${result.match}`}
                   onClick={() => handleSelect(result)}
                   onMouseEnter={() => setSelectedIndex(currentIndex)}
-                  className={`w-full px-3 py-2 rounded-md cursor-pointer flex items-start gap-3 mx-1 text-left transition-colors ${
-                    isSelected
-                      ? 'bg-[#f7f7f7] border-l-2 border-[#00d4a4]'
-                      : 'hover:bg-[#f7f7f7]'
+                  className={`group flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
+                    isSelected ? 'bg-brand/10' : 'hover:bg-surface'
                   }`}
                 >
-                  <Hash className="size-4 shrink-0 mt-0.5 text-[#888888]" />
-                  <div className="flex-1 min-w-0">
+                  <Hash
+                    className={`mt-0.5 size-4 shrink-0 ${
+                      isSelected ? 'text-brand-strong' : 'text-faint'
+                    }`}
+                  />
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-[#1c1c1e] truncate">
+                      <span
+                        className={`truncate text-sm font-medium ${
+                          isSelected ? 'text-brand-strong' : 'text-ink'
+                        }`}
+                      >
                         {result.sectionTitle}
-                      </span>
-                      <span className="text-[10px] text-[#888888] bg-[#f0f0f0] px-1.5 py-0.5 rounded shrink-0">
-                        {group.categoryLabel}
                       </span>
                     </div>
                     {result.match !== result.sectionTitle && (
-                      <p className="text-xs text-[#5a5a5c] mt-0.5 line-clamp-2 leading-relaxed">
+                      <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-mist">
                         {highlightMatch(result.match, debouncedQuery)}
                       </p>
                     )}
                   </div>
-                  <ArrowRight className="size-3.5 shrink-0 mt-1 text-[#888888] opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <ArrowRight
+                    className={`mt-1 size-3.5 shrink-0 transition-opacity ${
+                      isSelected ? 'text-brand-strong opacity-100' : 'opacity-0'
+                    }`}
+                  />
                 </button>
               )
             })}
@@ -260,8 +275,8 @@ function SearchDialogContent() {
 
         {/* Quick links when no query */}
         {!debouncedQuery.trim() && (
-          <div className="px-3 py-4">
-            <p className="text-xs uppercase tracking-wide text-[#888888] mb-2 px-1 font-semibold">
+          <div className="px-1.5 py-2.5">
+            <p className="mb-1 px-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
               Quick Navigation
             </p>
             {docCategories.slice(0, 4).map((cat) => (
@@ -274,11 +289,13 @@ function SearchDialogContent() {
                   setSearchOpen(false)
                   router.push(getPathForSectionId(sectionId) ?? '/')
                 }}
-                className="w-full px-3 py-2 rounded-md cursor-pointer hover:bg-[#f7f7f7] flex items-center gap-3 text-left transition-colors"
+                className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-surface"
               >
-                <FileText className="size-4 text-[#888888]" />
-                <span className="text-sm text-[#1c1c1e]">{cat.label}</span>
-                <span className="ml-auto text-xs text-[#888888]">
+                <span className="flex h-7 w-7 items-center justify-center rounded-md border border-hairline bg-surface">
+                  <FileText className="size-3.5 text-mist" />
+                </span>
+                <span className="text-sm font-medium text-ink">{cat.label}</span>
+                <span className="ml-auto text-xs text-faint">
                   {cat.sections.length} sections
                 </span>
               </button>
@@ -288,32 +305,36 @@ function SearchDialogContent() {
       </div>
 
       {/* Footer with keyboard shortcuts */}
-      <div className="border-t border-[#e5e5e5] px-4 py-2.5 flex justify-between items-center text-xs text-[#888888]">
+      <div className="flex items-center justify-between border-t border-hairline px-4 py-2.5 text-xs text-faint">
         <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1">
-            <kbd className="inline-flex items-center justify-center size-5 rounded bg-[#f0f0f0] border border-[#e5e5e5] text-[10px] font-medium">
+          <span className="flex items-center gap-1.5">
+            <kbd className="inline-flex size-5 items-center justify-center rounded border border-hairline bg-surface text-[10px] font-medium">
               ↑↓
             </kbd>
             <span>Navigate</span>
           </span>
-          <span className="flex items-center gap-1">
-            <kbd className="inline-flex items-center justify-center h-5 min-w-5 px-1 rounded bg-[#f0f0f0] border border-[#e5e5e5] text-[10px] font-medium">
-              ↵
+          <span className="flex items-center gap-1.5">
+            <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border border-hairline bg-surface px-1 text-[10px] font-medium">
+              <CornerDownLeft className="h-2.5 w-2.5" />
             </kbd>
             <span>Open</span>
           </span>
-          <span className="flex items-center gap-1">
-            <kbd className="inline-flex items-center justify-center size-5 rounded bg-[#f0f0f0] border border-[#e5e5e5] text-[10px] font-medium">
+          <span className="hidden items-center gap-1.5 sm:flex">
+            <kbd className="inline-flex h-5 items-center justify-center rounded border border-hairline bg-surface px-1 text-[10px] font-medium">
               Esc
             </kbd>
             <span>Close</span>
           </span>
         </div>
         <div className="flex items-center gap-1">
-          <kbd className="inline-flex items-center justify-center h-5 min-w-5 px-1 rounded bg-[#f0f0f0] border border-[#e5e5e5] text-[10px] font-medium">
-            {typeof navigator !== 'undefined' && /Mac/.test(navigator.userAgent) ? '⌘' : 'Ctrl'}
+          <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border border-hairline bg-surface px-1 text-[10px] font-medium">
+            {typeof navigator !== 'undefined' && /Mac/.test(navigator.userAgent) ? (
+              <Command className="h-2.5 w-2.5" />
+            ) : (
+              'Ctrl'
+            )}
           </kbd>
-          <kbd className="inline-flex items-center justify-center h-5 min-w-5 px-1 rounded bg-[#f0f0f0] border border-[#e5e5e5] text-[10px] font-medium">
+          <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border border-hairline bg-surface px-1 text-[10px] font-medium">
             K
           </kbd>
         </div>
@@ -345,7 +366,7 @@ export function SearchDialog() {
     <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
       <DialogContent
         showCloseButton={false}
-        className="max-w-[640px] rounded-lg shadow-2xl p-0 gap-0 overflow-hidden border border-[#e5e5e5] bg-white"
+        className="top-[15%] max-w-[640px] translate-y-0 gap-0 overflow-hidden rounded-xl border border-hairline bg-popover p-0 shadow-2xl sm:max-w-[640px]"
         onInteractOutside={(e) => {
           e.preventDefault()
           setSearchOpen(false)

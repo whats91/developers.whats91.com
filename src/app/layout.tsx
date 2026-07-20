@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import { ThemeProvider } from "@/components/theme-provider";
 import { brandAssets } from "@/lib/brand-assets";
 
 export const metadata: Metadata = {
@@ -35,13 +36,19 @@ export const metadata: Metadata = {
         height: 630,
         alt: "Whats91 Developer Documentation",
       },
+      {
+        url: "/icons/icon-512.png",
+        width: 512,
+        height: 512,
+        alt: "Whats91 logo",
+      },
     ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Whats91 Developer Docs",
     description: "WhatsApp Messaging & API Services Documentation",
-    images: ["/twitter-image"],
+    images: ["/twitter-image", "/icons/icon-512.png"],
   },
 };
 
@@ -53,8 +60,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased bg-background text-foreground">
-        {children}
-        <Toaster />
+        <ThemeProvider>
+          {children}
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

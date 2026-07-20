@@ -70,13 +70,13 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="flex items-center gap-1 text-xs text-[#b3b3b3] hover:text-white transition-colors px-2 py-1 rounded hover:bg-white/5"
+      className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-[#8b949e] transition-colors hover:bg-white/10 hover:text-white"
       aria-label={copied ? 'Copied!' : 'Copy code'}
     >
       {copied ? (
         <>
-          <Check className="h-3.5 w-3.5" />
-          <span>Copied!</span>
+          <Check className="h-3.5 w-3.5 text-[#7ee0b4]" />
+          <span className="text-[#7ee0b4]">Copied</span>
         </>
       ) : (
         <>
@@ -95,14 +95,16 @@ function CodeBlock({ language, code, label }: { language: string; code: string; 
   const langLabel = label || language
 
   return (
-    <div className="rounded-md overflow-hidden my-6 border border-[#1f1f1f]">
+    <div className="my-6 overflow-hidden rounded-xl border border-code-border shadow-sm">
       {/* Header bar */}
-      <div className="flex items-center justify-between bg-[#1c1c1e] px-4 py-2 border-b border-[#1f1f1f]">
-        <span className="text-xs text-[#b3b3b3] font-medium">{langLabel}</span>
+      <div className="flex items-center justify-between border-b border-code-border bg-code-header py-1.5 pl-4 pr-2">
+        <span className="font-mono text-[11px] font-medium uppercase tracking-wider text-[#8b949e]">
+          {langLabel}
+        </span>
         <CopyButton text={code} />
       </div>
       {/* Code content */}
-      <pre className="code-block !rounded-none !mt-0 !border-0">
+      <pre className="code-block !mt-0 !rounded-none !border-0">
         <code
           dangerouslySetInnerHTML={{
             __html: highlightCode(code, language),
@@ -133,14 +135,15 @@ function CollapsibleCodeBlock({
     <div className="my-3">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 text-sm text-[#b3b3b3] hover:text-white transition-colors mb-2"
+        aria-expanded={open}
+        className="mb-2 flex items-center gap-1.5 text-sm font-medium text-mist transition-colors hover:text-ink"
       >
         {open ? (
           <ChevronDown className="h-4 w-4" />
         ) : (
           <ChevronRight className="h-4 w-4" />
         )}
-        <span className="font-medium">{title}</span>
+        <span>{title}</span>
       </button>
       {open && (
         <div className="space-y-3">
@@ -178,20 +181,20 @@ function ApiEndpointCard({ block }: { block: ContentBlock }) {
           : 'method-delete'
 
   return (
-    <div className="my-6 border border-[#e5e5e5] dark:border-[#1f1f1f] rounded-md overflow-hidden">
+    <div className="my-6 overflow-hidden rounded-xl border border-hairline bg-card shadow-sm">
       {/* Endpoint header */}
-      <div className="flex items-center gap-3 px-4 py-3 bg-[#fafafa] dark:bg-[#1c1c1e] border-b border-[#e5e5e5] dark:border-[#1f1f1f]">
+      <div className="flex flex-wrap items-center gap-3 border-b border-hairline bg-surface/60 px-4 py-3">
         <span
-          className={`${methodClass} text-xs font-bold px-2.5 py-1 rounded-md uppercase tracking-wide`}
+          className={`${methodClass} rounded-md px-2.5 py-1 text-xs font-bold uppercase tracking-wide`}
         >
           {method}
         </span>
-        <code className="text-sm font-mono text-[#0a0a0a] dark:text-[#e5e5e5]">
+        <code className="!border-0 !bg-transparent !p-0 font-mono text-[13.5px] font-medium text-ink">
           {endpoint}
         </code>
       </div>
 
-      <div className="p-4 space-y-2">
+      <div className="space-y-2 p-4 sm:p-5">
         {/* Parameters */}
         {parameters && parameters.length > 0 && (
           <ParamTable params={parameters} />
@@ -216,54 +219,52 @@ function ApiEndpointCard({ block }: { block: ContentBlock }) {
 // ---------------------------------------------------------------------------
 function ParamTable({ params }: { params: ApiParameter[] }) {
   return (
-    <div className="overflow-x-auto my-4">
+    <div className="doc-scroll my-4 overflow-x-auto rounded-lg border border-hairline">
       <table className="w-full border-collapse text-sm">
         <thead>
-          <tr className="border-b border-[#e5e5e5] dark:border-[#1f1f1f]">
-            <th className="text-left py-2 pr-4 font-semibold text-[#0a0a0a] dark:text-white">
+          <tr className="border-b border-hairline bg-surface/70">
+            <th className="py-2.5 pl-4 pr-4 text-left text-[13px] font-semibold text-ink">
               Parameter
             </th>
-            <th className="text-left py-2 pr-4 font-semibold text-[#0a0a0a] dark:text-white">
+            <th className="py-2.5 pr-4 text-left text-[13px] font-semibold text-ink">
               Type
             </th>
-            <th className="text-left py-2 pr-4 font-semibold text-[#0a0a0a] dark:text-white">
+            <th className="py-2.5 pr-4 text-left text-[13px] font-semibold text-ink">
               Required
             </th>
-            <th className="text-left py-2 font-semibold text-[#0a0a0a] dark:text-white">
+            <th className="py-2.5 pr-4 text-left text-[13px] font-semibold text-ink">
               Description
             </th>
           </tr>
         </thead>
         <tbody>
-          {params.map((param, i) => (
+          {params.map((param) => (
             <tr
               key={param.name}
-              className={`border-b border-[#e5e5e5] dark:border-[#1f1f1f] ${
-                i % 2 === 0 ? 'bg-transparent' : 'bg-[#fafafa] dark:bg-[#141414]'
-              }`}
+              className="border-b border-hairline-soft last:border-0"
             >
-              <td className="py-2.5 pr-4">
-                <code className="text-[13px] font-mono font-medium text-[#0a0a0a] dark:text-[#e5e5e5] bg-[#f7f7f7] dark:bg-[#1c1c1e] px-1.5 py-0.5 rounded border border-[#e5e5e5] dark:border-[#1f1f1f]">
+              <td className="py-3 pl-4 pr-4 align-top">
+                <code className="whitespace-nowrap text-[12.5px] font-medium">
                   {param.name}
                 </code>
               </td>
-              <td className="py-2.5 pr-4">
-                <span className="text-xs font-mono px-2 py-0.5 rounded bg-[#f7f7f7] dark:bg-[#1c1c1e] text-[#5a5a5c] dark:text-[#a8a8aa] border border-[#e5e5e5] dark:border-[#1f1f1f]">
+              <td className="py-3 pr-4 align-top">
+                <span className="whitespace-nowrap font-mono text-xs text-mist">
                   {param.type}
                 </span>
               </td>
-              <td className="py-2.5 pr-4">
+              <td className="py-3 pr-4 align-top">
                 {param.required ? (
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded bg-[rgba(0,212,164,0.1)] text-[#00b48a] dark:text-[#00d4a4]">
+                  <span className="whitespace-nowrap rounded-full bg-brand/10 px-2 py-0.5 text-xs font-semibold text-brand-strong">
                     Required
                   </span>
                 ) : (
-                  <span className="text-xs px-2 py-0.5 rounded bg-[#f7f7f7] dark:bg-[#1c1c1e] text-[#888888] border border-[#e5e5e5] dark:border-[#1f1f1f]">
+                  <span className="whitespace-nowrap rounded-full bg-surface px-2 py-0.5 text-xs text-faint">
                     Optional
                   </span>
                 )}
               </td>
-              <td className="py-2.5 text-[#5a5a5c] dark:text-[#a8a8aa]">
+              <td className="min-w-[200px] py-3 pr-4 align-top text-[13.5px] leading-relaxed text-mist">
                 {param.description}
               </td>
             </tr>
@@ -283,48 +284,40 @@ function Callout({ block }: { block: ContentBlock }) {
 
   const config = {
     info: {
-      borderColor: '#3772cf',
-      bgColor: 'rgba(55,114,207,0.05)',
+      container: 'border-info/30 bg-info/[0.06]',
+      icon: 'text-info',
+      title: 'Note',
       Icon: Info,
-      iconColor: '#3772cf',
     },
     warning: {
-      borderColor: '#c37d0d',
-      bgColor: 'rgba(195,125,13,0.05)',
+      container: 'border-warn/30 bg-warn/[0.06]',
+      icon: 'text-warn',
+      title: 'Warning',
       Icon: AlertTriangle,
-      iconColor: '#c37d0d',
     },
     tip: {
-      borderColor: '#00d4a4',
-      bgColor: 'rgba(0,212,164,0.05)',
+      container: 'border-brand/30 bg-brand/[0.06]',
+      icon: 'text-brand-strong',
+      title: 'Tip',
       Icon: Lightbulb,
-      iconColor: '#00d4a4',
     },
     danger: {
-      borderColor: '#d45656',
-      bgColor: 'rgba(212,86,86,0.05)',
+      container: 'border-danger/30 bg-danger/[0.06]',
+      icon: 'text-danger',
+      title: 'Important',
       Icon: AlertCircle,
-      iconColor: '#d45656',
     },
   }
 
-  const { borderColor, bgColor, Icon, iconColor } = config[variant]
+  const { container, icon, title, Icon } = config[variant]
 
   return (
-    <div
-      className="my-6 rounded-md p-4 flex gap-3"
-      style={{
-        borderLeft: `3px solid ${borderColor}`,
-        backgroundColor: bgColor,
-      }}
-    >
-      <Icon
-        className="h-5 w-5 shrink-0 mt-0.5"
-        style={{ color: iconColor }}
-      />
-      <p className="text-sm text-[#0a0a0a] dark:text-[#e5e5e5] leading-relaxed m-0">
-        {text}
-      </p>
+    <div className={`my-6 flex gap-3 rounded-xl border p-4 ${container}`}>
+      <Icon className={`mt-0.5 h-4.5 w-4.5 shrink-0 ${icon}`} aria-hidden="true" />
+      <div className="min-w-0">
+        <p className={`m-0 mb-0.5 text-[13px] font-semibold ${icon}`}>{title}</p>
+        <p className="m-0 text-sm leading-relaxed text-foreground/90">{text}</p>
+      </div>
     </div>
   )
 }
@@ -337,14 +330,14 @@ function DataTable({ block }: { block: ContentBlock }) {
   const rows = block.rows || []
 
   return (
-    <div className="overflow-x-auto my-6 border border-[#e5e5e5] dark:border-[#1f1f1f] rounded-md">
+    <div className="doc-scroll my-6 overflow-x-auto rounded-xl border border-hairline">
       <table className="w-full border-collapse text-sm">
         <thead>
-          <tr className="bg-[#fafafa] dark:bg-[#1c1c1e] border-b border-[#e5e5e5] dark:border-[#1f1f1f]">
+          <tr className="border-b border-hairline bg-surface/70">
             {headers.map((h, i) => (
               <th
                 key={i}
-                className="text-left py-2.5 px-4 font-semibold text-[#0a0a0a] dark:text-white text-sm"
+                className="px-4 py-2.5 text-left text-[13px] font-semibold text-ink"
               >
                 {h}
               </th>
@@ -355,12 +348,12 @@ function DataTable({ block }: { block: ContentBlock }) {
           {rows.map((row, i) => (
             <tr
               key={i}
-              className="border-b border-[#e5e5e5] dark:border-[#1f1f1f] last:border-0"
+              className="border-b border-hairline-soft transition-colors last:border-0 hover:bg-surface/40"
             >
               {row.map((cell, j) => (
                 <td
                   key={j}
-                  className="py-2.5 px-4 text-[#0a0a0a] dark:text-[#e5e5e5]"
+                  className="px-4 py-3 align-top text-[13.5px] leading-relaxed text-foreground/90"
                 >
                   {cell}
                 </td>
@@ -383,29 +376,24 @@ function CardGrid({ block }: { block: ContentBlock }) {
 
   const toneConfig = {
     green: {
-      border: '#00b48a',
-      bg: 'rgba(0,212,164,0.08)',
-      text: '#007f68',
+      chip: 'bg-brand/10 text-brand-strong',
+      accent: 'var(--brand)',
     },
     blue: {
-      border: '#3772cf',
-      bg: 'rgba(55,114,207,0.08)',
-      text: '#285ca7',
+      chip: 'bg-info/10 text-info',
+      accent: 'var(--info)',
     },
     amber: {
-      border: '#c37d0d',
-      bg: 'rgba(195,125,13,0.08)',
-      text: '#8f5a08',
+      chip: 'bg-warn/10 text-warn',
+      accent: 'var(--warn)',
     },
     red: {
-      border: '#d45656',
-      bg: 'rgba(212,86,86,0.08)',
-      text: '#a63d3d',
+      chip: 'bg-danger/10 text-danger',
+      accent: 'var(--danger)',
     },
     slate: {
-      border: '#5a5a5c',
-      bg: 'rgba(90,90,92,0.08)',
-      text: '#4f4f51',
+      chip: 'bg-surface text-mist',
+      accent: 'var(--faint)',
     },
   }
 
@@ -419,27 +407,30 @@ function CardGrid({ block }: { block: ContentBlock }) {
           <article
             key={card.title}
             data-doc-card
-            className="rounded-md border border-[#e5e5e5] dark:border-[#1f1f1f] bg-white dark:bg-[#101010] p-4 shadow-sm"
-            style={{ borderTop: `3px solid ${colors.border}` }}
+            className="relative overflow-hidden rounded-xl border border-hairline bg-card p-5 shadow-sm transition-shadow hover:shadow-md"
           >
+            <span
+              className="absolute inset-x-0 top-0 h-[3px]"
+              style={{ backgroundColor: colors.accent }}
+              aria-hidden="true"
+            />
             <div className="mb-3 flex items-start justify-between gap-3">
               <div
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md"
-                style={{ backgroundColor: colors.bg, color: colors.text }}
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${colors.chip}`}
                 aria-hidden="true"
               >
                 <Gauge className="h-4 w-4" />
               </div>
               {card.value && (
-                <span className="rounded-md border border-[#e5e5e5] dark:border-[#1f1f1f] bg-[#fafafa] dark:bg-[#1c1c1e] px-2.5 py-1 text-right font-mono text-[12px] font-semibold text-[#0a0a0a] dark:text-[#e5e5e5]">
+                <span className="rounded-lg border border-hairline bg-surface px-2.5 py-1 text-right font-mono text-[12px] font-semibold text-ink">
                   {card.value}
                 </span>
               )}
             </div>
-            <h3 className="mb-2 text-[17px] font-semibold leading-snug text-[#0a0a0a] dark:text-white">
+            <h3 className="mb-1.5 text-[16px] font-semibold leading-snug text-ink">
               {card.title}
             </h3>
-            <p className="m-0 text-[14px] leading-relaxed text-[#5a5a5c] dark:text-[#a8a8aa]">
+            <p className="m-0 text-[13.5px] leading-relaxed text-mist">
               {card.description}
             </p>
           </article>
@@ -456,8 +447,8 @@ function DocList({ block }: { block: ContentBlock }) {
   const items = block.items || []
   const ordered = (block as { ordered?: boolean }).ordered
 
-  const listClass = 'my-4 space-y-1.5 pl-5'
-  const itemClass = 'text-[16px] leading-relaxed text-[#0a0a0a] dark:text-[#e5e5e5]'
+  const listClass = 'my-4 space-y-2 pl-5'
+  const itemClass = 'text-[15px] leading-[1.75] text-foreground/90 marker:text-faint'
 
   if (ordered) {
     return (
@@ -492,10 +483,10 @@ function StepsList({ block }: { block: ContentBlock }) {
     <ol className="my-6 space-y-4">
       {items.map((item, i) => (
         <li key={i} className="flex gap-3">
-          <span className="shrink-0 flex items-center justify-center h-7 w-7 rounded-full bg-[#00d4a4]/10 text-[#00b48a] dark:text-[#00d4a4] text-sm font-semibold">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand/10 text-sm font-semibold text-brand-strong">
             {i + 1}
           </span>
-          <span className="text-[16px] leading-relaxed text-[#0a0a0a] dark:text-[#e5e5e5] pt-0.5">
+          <span className="pt-0.5 text-[15px] leading-[1.75] text-foreground/90">
             {item}
           </span>
         </li>
@@ -512,16 +503,16 @@ function Heading({ block, headingId }: { block: ContentBlock; headingId: string 
   const text = block.text || ''
 
   const styles: Record<number, string> = {
-    1: 'text-[48px] font-semibold leading-[1.1] tracking-tight',
-    2: 'text-[30px] font-semibold leading-tight mt-12 mb-4',
-    3: 'text-[24px] font-semibold leading-tight mt-10 mb-3',
-    4: 'text-[20px] font-semibold leading-tight mt-8 mb-2',
+    1: 'text-[1.9rem] sm:text-[2.25rem] font-semibold leading-[1.15] tracking-[-0.02em]',
+    2: 'text-[1.4rem] sm:text-[1.5rem] font-semibold leading-snug tracking-[-0.015em] mt-12 mb-4 border-t border-hairline-soft pt-10 first:mt-0 first:border-0 first:pt-0',
+    3: 'text-[1.15rem] sm:text-[1.2rem] font-semibold leading-snug tracking-[-0.01em] mt-10 mb-3',
+    4: 'text-[1rem] font-semibold leading-snug mt-8 mb-2',
   }
 
   const Tag = `h${level}` as ElementType
 
   return (
-    <Tag id={headingId} className={`${styles[level] || styles[4]} text-[#0a0a0a] dark:text-white scroll-mt-20`}>
+    <Tag id={headingId} className={`${styles[level] || styles[4]} scroll-mt-24 text-ink`}>
       {text}
     </Tag>
   )
@@ -545,7 +536,7 @@ function ContentBlockRenderer({
 
     case 'paragraph':
       return (
-        <p className="text-[16px] leading-[1.5] text-[#0a0a0a] dark:text-[#e5e5e5] my-4">
+        <p className="my-4 text-[15px] leading-[1.8] text-foreground/90">
           {block.text}
         </p>
       )
@@ -575,7 +566,7 @@ function ContentBlockRenderer({
       return <DocList block={block} />
 
     case 'divider':
-      return <hr className="my-8 border-[#e5e5e5] dark:border-[#1f1f1f]" />
+      return <hr className="my-10 border-hairline" />
 
     default:
       return null
@@ -591,10 +582,10 @@ function RelatedApis({ section }: { section: DocSectionData }) {
 
   return (
     <section
-      className="mt-12 border-t border-[#e5e5e5] pt-8"
+      className="mt-14 border-t border-hairline pt-10"
       data-related-section-count={relatedSectionIds.length}
     >
-      <h2 className="mb-4 text-[24px] font-semibold leading-tight text-[#0a0a0a] dark:text-white">
+      <h2 className="mb-5 text-[1.4rem] font-semibold leading-snug tracking-[-0.015em] text-ink">
         {heading}
       </h2>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -605,12 +596,13 @@ function RelatedApis({ section }: { section: DocSectionData }) {
             <a
               key={relatedSection.id}
               href={path}
-              className="rounded-md border border-[#e5e5e5] bg-white p-4 transition-colors hover:border-[#00d4a4] hover:bg-[#f7fffc]"
+              className="group rounded-xl border border-hairline bg-card p-4 transition-all hover:border-brand/50 hover:shadow-sm"
             >
-              <h3 className="mb-1 text-[15px] font-semibold text-[#0a0a0a]">
+              <h3 className="mb-1 flex items-center gap-1.5 text-[14.5px] font-semibold text-ink transition-colors group-hover:text-brand-strong">
                 {relatedLinkLabel(relatedSection)}
+                <ChevronRight className="h-3.5 w-3.5 text-faint transition-transform group-hover:translate-x-0.5 group-hover:text-brand-strong" />
               </h3>
-              <p className="m-0 line-clamp-2 text-[13px] leading-relaxed text-[#5a5a5c]">
+              <p className="m-0 line-clamp-2 text-[13px] leading-relaxed text-mist">
                 {relatedSection.description}
               </p>
             </a>
@@ -649,19 +641,19 @@ function PageNavigation({ section }: { section: DocSectionData }) {
   return (
     <nav
       aria-label="Documentation page navigation"
-      className="mt-10 grid gap-3 border-t border-[#e5e5e5] pt-6 sm:grid-cols-2"
+      className="mt-12 grid gap-3 border-t border-hairline pt-8 sm:grid-cols-2"
     >
       {previous ? (
         <a
           href={previous.path}
-          className="group flex min-h-[76px] items-center gap-3 rounded-md border border-[#e5e5e5] bg-white p-4 text-left transition-colors hover:border-[#00d4a4] hover:bg-[#f7fffc]"
+          className="group flex min-h-[76px] items-center gap-3 rounded-xl border border-hairline bg-card p-4 text-left transition-all hover:border-brand/50 hover:shadow-sm"
         >
-          <ChevronLeft className="h-4 w-4 shrink-0 text-[#888888] transition-colors group-hover:text-[#00a783]" />
+          <ChevronLeft className="h-4 w-4 shrink-0 text-faint transition-all group-hover:-translate-x-0.5 group-hover:text-brand-strong" />
           <div className="min-w-0">
-            <div className="text-xs font-medium uppercase tracking-[0.08em] text-[#888888]">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
               Previous
             </div>
-            <div className="mt-1 text-[15px] font-semibold text-[#0a0a0a]">
+            <div className="mt-1 truncate text-[14.5px] font-semibold text-ink transition-colors group-hover:text-brand-strong">
               Previous: {pageNavigationLabel(previous)}
             </div>
           </div>
@@ -673,17 +665,17 @@ function PageNavigation({ section }: { section: DocSectionData }) {
       {next ? (
         <a
           href={next.path}
-          className="group flex min-h-[76px] items-center justify-between gap-3 rounded-md border border-[#e5e5e5] bg-white p-4 text-left transition-colors hover:border-[#00d4a4] hover:bg-[#f7fffc]"
+          className="group flex min-h-[76px] items-center justify-between gap-3 rounded-xl border border-hairline bg-card p-4 text-right transition-all hover:border-brand/50 hover:shadow-sm"
         >
-          <div className="min-w-0">
-            <div className="text-xs font-medium uppercase tracking-[0.08em] text-[#888888]">
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
               Next
             </div>
-            <div className="mt-1 text-[15px] font-semibold text-[#0a0a0a]">
+            <div className="mt-1 truncate text-[14.5px] font-semibold text-ink transition-colors group-hover:text-brand-strong">
               Next: {pageNavigationLabel(next)}
             </div>
           </div>
-          <ChevronRight className="h-4 w-4 shrink-0 text-[#888888] transition-colors group-hover:text-[#00a783]" />
+          <ChevronRight className="h-4 w-4 shrink-0 text-faint transition-all group-hover:translate-x-0.5 group-hover:text-brand-strong" />
         </a>
       ) : null}
     </nav>
@@ -699,21 +691,25 @@ function SummaryBlock({ section }: { section: DocSectionData }) {
     <section
       aria-labelledby="doc-summary-heading"
       data-doc-summary
-      className="my-6 rounded-md border border-[#d8eee8] bg-[#f7fffc] p-5"
+      className="my-8 rounded-xl border border-brand/20 bg-brand/[0.04] p-5 sm:p-6"
     >
-      <h2 id="doc-summary-heading" className="mb-3 text-[20px] font-semibold leading-tight text-[#0a0a0a]">
+      <h2
+        id="doc-summary-heading"
+        className="mb-2.5 flex items-center gap-2 text-[15px] font-semibold leading-tight text-ink"
+      >
+        <Sparkles className="h-4 w-4 text-brand-strong" aria-hidden="true" />
         Summary
       </h2>
-      <p className="m-0 text-[15px] leading-relaxed text-[#3f4f4a]">
+      <p className="m-0 text-[14.5px] leading-relaxed text-foreground/85">
         {summary}
       </p>
 
       {prerequisites.length > 0 && (
-        <div className="mt-4">
-          <h3 className="mb-2 text-[14px] font-semibold uppercase tracking-wide text-[#007f68]">
+        <div className="mt-5">
+          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-brand-strong">
             Prerequisites
           </h3>
-          <ul className="m-0 list-disc space-y-1 pl-5 text-[14px] leading-relaxed text-[#3f4f4a]">
+          <ul className="m-0 list-disc space-y-1 pl-5 text-[13.5px] leading-relaxed text-foreground/85 marker:text-brand/60">
             {prerequisites.map((item) => (
               <li key={item}>{item}</li>
             ))}
@@ -722,8 +718,8 @@ function SummaryBlock({ section }: { section: DocSectionData }) {
       )}
 
       {relatedSections.length > 0 && (
-        <div className="mt-4">
-          <h3 className="mb-2 text-[14px] font-semibold uppercase tracking-wide text-[#007f68]">
+        <div className="mt-5">
+          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-brand-strong">
             Related documentation
           </h3>
           <div className="flex flex-wrap gap-2">
@@ -734,7 +730,7 @@ function SummaryBlock({ section }: { section: DocSectionData }) {
                 <a
                   key={relatedSection.id}
                   href={path}
-                  className="rounded-md border border-[#d8eee8] bg-white px-3 py-1.5 text-[13px] font-medium text-[#0a0a0a] transition-colors hover:border-[#00d4a4] hover:text-[#007f68]"
+                  className="rounded-full border border-hairline bg-card px-3 py-1.5 text-[12.5px] font-medium text-ink transition-colors hover:border-brand/50 hover:text-brand-strong"
                 >
                   {relatedLinkLabel(relatedSection)}
                 </a>
@@ -753,17 +749,17 @@ function FaqSection({ section }: { section: DocSectionData }) {
   if (faqs.length === 0) return null
 
   return (
-    <section id="faq" className="mt-12 border-t border-[#e5e5e5] pt-8" data-doc-faq>
-      <h2 className="mb-4 text-[24px] font-semibold leading-tight text-[#0a0a0a] dark:text-white">
+    <section id="faq" className="mt-14 border-t border-hairline pt-10" data-doc-faq>
+      <h2 className="mb-5 text-[1.4rem] font-semibold leading-snug tracking-[-0.015em] text-ink">
         Frequently Asked Questions
       </h2>
-      <div className="space-y-4">
+      <div className="divide-y divide-hairline-soft overflow-hidden rounded-xl border border-hairline bg-card">
         {faqs.map((faq) => (
-          <article key={faq.question} className="rounded-md border border-[#e5e5e5] bg-white p-4">
-            <h3 className="mb-2 text-[16px] font-semibold leading-snug text-[#0a0a0a]">
+          <article key={faq.question} className="p-4 sm:p-5">
+            <h3 className="mb-1.5 text-[14.5px] font-semibold leading-snug text-ink">
               {faq.question}
             </h3>
-            <p className="m-0 text-[14px] leading-relaxed text-[#5a5a5c]">
+            <p className="m-0 text-[13.5px] leading-relaxed text-mist">
               {faq.answer}
             </p>
           </article>
@@ -842,19 +838,19 @@ function CopyForLlmButton({
         type="button"
         onClick={handleCopy}
         disabled={status === 'copying'}
-        className="inline-flex whitespace-nowrap items-center gap-2 rounded-md border border-[#d8eee8] bg-white px-3.5 py-2 text-sm font-semibold text-[#0a0a0a] shadow-sm transition-colors hover:border-[#00d4a4] hover:bg-[#f7fffc] disabled:cursor-not-allowed disabled:opacity-70"
+        className="inline-flex items-center gap-2 whitespace-nowrap rounded-lg border border-hairline bg-card px-3.5 py-2 text-[13px] font-semibold text-ink shadow-sm transition-colors hover:border-brand/50 hover:bg-brand/[0.05] disabled:cursor-not-allowed disabled:opacity-70"
         aria-label={`${label}: ${doc.label}`}
         data-llm-copy-path={doc.path}
       >
         {status === 'copied' ? (
-          <Check className="h-4 w-4 text-[#00a982]" />
+          <Check className="h-4 w-4 text-brand-strong" />
         ) : (
-          <Sparkles className="h-4 w-4 text-[#00a982]" />
+          <Sparkles className="h-4 w-4 text-brand-strong" />
         )}
         <span>{label}</span>
       </button>
       {!isHeadingPlacement && (
-        <p className="mt-2 max-w-[680px] text-[13px] leading-relaxed text-[#5a5a5c]">
+        <p className="mt-2 max-w-[680px] text-[13px] leading-relaxed text-mist">
           Copies the {doc.label} markdown so an LLM can generate or debug Messaging API code.
         </p>
       )}
@@ -868,11 +864,11 @@ function SdkExamples({ section }: { section: DocSectionData }) {
   if (sdkExamples.length === 0) return null
 
   return (
-    <section className="mt-12 border-t border-[#e5e5e5] pt-8">
-      <h2 className="mb-4 text-[24px] font-semibold leading-tight text-[#0a0a0a] dark:text-white">
+    <section className="mt-14 border-t border-hairline pt-10">
+      <h2 className="mb-3 text-[1.4rem] font-semibold leading-snug tracking-[-0.015em] text-ink">
         SDK Examples
       </h2>
-      <p className="text-[15px] leading-relaxed text-[#5a5a5c] dark:text-[#a8a8aa]">
+      <p className="text-[14.5px] leading-relaxed text-mist">
         Use these examples as starting points for server-side implementations.
       </p>
       <div className="space-y-4">
@@ -914,15 +910,15 @@ export function ContentRenderer({ sectionId }: ContentRendererProps) {
     return section.content.findIndex((block) => block.type === 'heading' && (block.level ?? 2) === 1)
   }, [section])
 
-  // Scroll to top when section changes
+  // Jump to top when section changes (instant, so it doesn't fight smooth anchors)
   useEffect(() => {
-    window.scrollTo(0, 0)
+    window.scrollTo({ top: 0 })
   }, [activeSection])
 
   if (!section) {
     return (
       <div className="flex items-center justify-center py-20">
-        <p className="text-[#888888] text-lg">Section not found.</p>
+        <p className="text-lg text-faint">Section not found.</p>
       </div>
     )
   }
@@ -935,7 +931,7 @@ export function ContentRenderer({ sectionId }: ContentRendererProps) {
     <div ref={contentRef} id="doc-content" className="mx-auto w-full max-w-[960px]">
       {/* Description / subtitle */}
       {section.description && (
-        <p className="text-[18px] leading-relaxed text-[#5a5a5c] dark:text-[#a8a8aa] mb-8 -mt-2">
+        <p className="-mt-2 mb-8 text-[16.5px] leading-relaxed text-mist">
           {section.description}
         </p>
       )}
@@ -971,7 +967,7 @@ export function ContentRenderer({ sectionId }: ContentRendererProps) {
       <PageNavigation section={section} />
 
       {/* Bottom spacer */}
-      <div className="h-24" />
+      <div className="h-16" />
     </div>
   )
 }

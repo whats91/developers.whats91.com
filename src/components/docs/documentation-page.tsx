@@ -36,7 +36,15 @@ export function DocumentationPage({
   const isChangelog = renderedActiveCategory === 'changelog'
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="flex min-h-dvh flex-col bg-background">
+      {/* Keyboard users can jump past the header and sidebar */}
+      <a
+        href="#main-content"
+        className="sr-only z-[60] rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+      >
+        Skip to content
+      </a>
+
       {/* Top Navigation Bar */}
       <TopNavbar activeCategoryOverride={renderedActiveCategory} />
 
@@ -61,10 +69,10 @@ export function DocumentationPage({
         </div>
 
         {/* Center Content + Right TOC */}
-        <main className="flex-1 min-w-0 md:ml-[260px]">
-          <div className="flex">
+        <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 md:pl-[280px]">
+          <div className="flex justify-center">
             {/* Content Area */}
-            <div className="flex-1 min-w-0 px-6 lg:px-10 py-8 lg:py-10">
+            <div className="min-w-0 flex-1 px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
               {isChangelog ? (
                 <ChangelogPage />
               ) : (

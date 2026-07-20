@@ -31,13 +31,29 @@ export function rankSearchIndexEntries(entries, query, limit = 25) {
   const normalizedQuery = normalize(query)
   if (!normalizedQuery) return []
 
+  const queryTokens = normalizedQuery.split(/\s+/).filter(Boolean)
+
   return entries
     .map((entry, index) => {
       const titleScore = scoreText(entry.sectionTitle, normalizedQuery, 400)
       const categoryScore = scoreText(entry.categoryLabel, normalizedQuery, 260)
       const descriptionScore = scoreText(entry.description, normalizedQuery, 120)
       const contentScore = scoreText(entry.content, normalizedQuery, 20)
-      const bestScore = Math.max(titleScore, categoryScore, descriptionScore, contentScore)
+      let bestScore = Math.max(titleScore, categoryScore, descriptionScore, contentScore)
+
+      // Multi-word queries rarely appear as one exact phrase. When the phrase
+      // itself does not match, fall back to requiring every token somewhere in
+      // the entry, ranked below any exact phrase match.
+      if (bestScore <= 0 && queryTokens.length > 1) {
+        const haystack = normalize(
+          `${entry.sectionTitle} ${entry.categoryLabel} ${entry.description} ${entry.content}`
+        )
+        if (queryTokens.every((token) => haystack.includes(token))) {
+          const normalizedTitle = normalize(`${entry.sectionTitle ?? ''} ${entry.categoryLabel ?? ''}`)
+          const titleHits = queryTokens.filter((token) => normalizedTitle.includes(token)).length
+          bestScore = 10 + titleHits * 30
+        }
+      }
 
       if (bestScore <= 0) return null
 
